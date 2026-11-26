@@ -43,7 +43,7 @@ tooltip label { color: #f1e5db; }
   background-color: #f1cdb5;
 }
 
-/* Media controls share a single background. */
+/* 媒体标题和播放按钮共用一块底板。 */
 #media:not(.empty) {
   margin-bottom: 12px;
   background: rgba(82, 67, 101, 0.86);

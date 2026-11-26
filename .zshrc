@@ -1,7 +1,7 @@
 if [[ -o interactive && -t 0 && -t 1 && -n ${KITTY_WINDOW_ID:-} &&
       -z ${TMUX:-} && -z ${ZSH_EXECUTION_STRING:-} ]] && (( $+commands[tmux] )); then
   tmux new-session -c "$PWD" env DUSK_FASTFETCH=1 /usr/bin/zsh
-  # Detaching returns to this shell without another startup banner.
+  # 分离 tmux 后回到这个 Shell，跳过重复的启动信息。
   typeset _dusk_started_tmux=1
 fi
 

@@ -82,7 +82,7 @@ blankwindow.open .control-center {
   font-size: 16px;
 }
 
-/* Notification cards inside the control center. */
+/* 通知中心里的通知卡片。 */
 .control-center .control-center-list .notification-row,
 .control-center .control-center-list .notification-row:focus,
 .control-center .control-center-list .notification-group:focus {
@@ -128,7 +128,7 @@ blankwindow.open .control-center {
   font-weight: 600;
 }
 
-/* Suppress GTK's default blue outline around focused notification rows. */
+/* 隐去通知列表的默认蓝色焦点框。 */
 .control-center .control-center-list:focus,
 .control-center .control-center-list row:focus,
 .control-center .control-center-list row:focus-visible,
