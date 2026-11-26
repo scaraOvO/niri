@@ -16,3 +16,7 @@ Arch Linux 上的 Dusk 桌面配置，包含 Niri、Waybar、SwayNotificationCen
 - `ttf-nerd-fonts-symbols-mono` 提供 **Symbols Nerd Font Mono**，用于工作区、时钟、CPU、内存、网络、音量和通知图标。
 - `ttf-nerd-fonts-symbols-common` 随上面的包一同安装，提供共享 Fontconfig 配置。
 - 正文仍使用桌面已有的 **Adwaita Sans**。
+
+## Waybar 媒体控制
+
+安装 Arch 的 `playerctl` 包。Waybar 在检测到 MPRIS 播放器时显示媒体标题和播放控件。上一首和下一首取决于播放器或网页提供的操作。

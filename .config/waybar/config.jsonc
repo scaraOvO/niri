@@ -14,6 +14,7 @@
     "clock"
   ],
   "modules-right": [
+    "group/media",
     "cpu",
     "memory",
     "network",
@@ -22,18 +23,19 @@
     "tray"
   ],
   "niri/workspaces": {
-    "format": "{icon}",
-    "disable-scroll": true,
-    "format-icons": {
-      "active": "",
-      "default": "",
-      "urgent": ""
-    }
+    "format": "{name}",
+    "disable-scroll": true
   },
   "niri/window": {
-    "format": "{}",
+    "format": "{app_id}",
     "max-length": 35,
-    "tooltip": false
+    "tooltip": false,
+    "rewrite": {
+      "^(kitty|org\\.kovidgoyal\\.kitty)$": "Kitty",
+      "^(firefox|org\\.mozilla\\.firefox)$": "Firefox",
+      "^(thunar|Thunar|org\\.xfce\\.Thunar)$": "Thunar",
+      "^org\\.gnome\\.Nautilus$": "Files"
+    }
   },
   "clock": {
     "format": "  {:%H:%M  |  %m/%d}",
@@ -88,5 +90,45 @@
     "on-click-middle": "swaync-client --close-all",
     "exec-on-event": false,
     "restart-interval": 3
+  },
+  "group/media": {
+    "orientation": "horizontal",
+    "modules": [
+      "mpris#media-title",
+      "mpris#media-prev",
+      "mpris#media-toggle",
+      "mpris#media-next"
+    ]
+  },
+  "mpris#media-title": {
+    "format": "  {dynamic}",
+    "dynamic-order": [
+      "title",
+      "artist"
+    ],
+    "dynamic-separator": "  ·  ",
+    "dynamic-len": 34,
+    "title-len": 25,
+    "artist-len": 16,
+    "max-length": 38,
+    "tooltip-format": "{title}\n{artist}"
+  },
+  "mpris#media-prev": {
+    "format": "",
+    "tooltip-format": "Previous track",
+    "on-click": "playerctl --player=playerctld,%any previous"
+  },
+  "mpris#media-toggle": {
+    "format": "{status_icon}",
+    "status-icons": {
+      "playing": "",
+      "paused": ""
+    },
+    "tooltip-format": "Play / pause"
+  },
+  "mpris#media-next": {
+    "format": "",
+    "tooltip-format": "Next track",
+    "on-click": "playerctl --player=playerctld,%any next"
   }
 }
