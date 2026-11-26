@@ -1,0 +1,59 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 36,
+  "margin-top": 8,
+  "margin-left": 14,
+  "margin-right": 14,
+  "spacing": 7,
+  "modules-left": [
+    "niri/workspaces",
+    "niri/window"
+  ],
+  "modules-center": [
+    "clock"
+  ],
+  "modules-right": [
+    "cpu",
+    "memory",
+    "network",
+    "pulseaudio",
+    "tray"
+  ],
+  "niri/workspaces": {
+    "format": "{name}",
+    "disable-scroll": true
+  },
+  "niri/window": {
+    "format": "{}",
+    "max-length": 35,
+    "tooltip": false
+  },
+  "clock": {
+    "format": "{:%H:%M  |  %m/%d}",
+    "tooltip-format": "<tt>{calendar}</tt>",
+    "format-alt": "{:%Y-%m-%d  %H:%M:%S}"
+  },
+  "cpu": {
+    "format": "CPU {usage}%"
+  },
+  "memory": {
+    "format": "RAM {percentage}%"
+  },
+  "network": {
+    "format-wifi": "Wi-Fi {signalStrength}%",
+    "format-ethernet": "LAN",
+    "format-disconnected": "Offline",
+    "tooltip-format": "{ifname} {ipaddr}"
+  },
+  "pulseaudio": {
+    "format": "VOL {volume}%",
+    "format-muted": "Muted",
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "scroll-step": 3
+  },
+  "tray": {
+    "icon-size": 16,
+    "spacing": 7
+  }
+}

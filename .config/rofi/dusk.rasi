@@ -1,0 +1,57 @@
+* {
+    font: "Adwaita Sans 12";
+    surface: #211e30;
+    panel: #2d283e;
+    foreground: #f1e5db;
+    muted: #b9acc2;
+    accent: #efbc99;
+    outline: #68516b;
+    lavender: #c79fcb;
+    background-color: transparent;
+    text-color: @foreground;
+}
+
+window {
+    location: center;
+    width: 540px;
+    border: 1px;
+    border-color: @outline;
+    border-radius: 18px;
+    background-color: @surface;
+}
+mainbox {
+    padding: 18px;
+    spacing: 12px;
+    children: [ inputbar, listview, mode-switcher ];
+}
+inputbar {
+    padding: 10px 12px;
+    spacing: 10px;
+    background-color: @panel;
+    border-radius: 10px;
+    children: [ prompt, entry ];
+}
+prompt { text-color: @accent; }
+entry { placeholder: "Search applications or commands"; placeholder-color: @muted; }
+listview {
+    lines: 7;
+    columns: 1;
+    fixed-height: false;
+    scrollbar: false;
+    spacing: 4px;
+}
+element {
+    padding: 8px 10px;
+    spacing: 10px;
+    border-radius: 9px;
+    children: [ element-icon, element-text ];
+}
+element selected.normal, element selected.active, element selected.urgent {
+    background-color: @accent;
+    text-color: @surface;
+}
+element-icon { size: 22px; }
+element-text { vertical-align: 0.5; text-color: inherit; }
+mode-switcher { spacing: 6px; }
+button { padding: 6px 10px; border-radius: 8px; text-color: @muted; }
+button selected { background-color: @panel; text-color: @lavender; }

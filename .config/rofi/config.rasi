@@ -1,0 +1,9 @@
+configuration {
+    modi: "drun,run";
+    show-icons: true;
+    icon-theme: "Adwaita";
+    display-drun: "Apps";
+    display-run: "Run";
+    drun-display-format: "{name}";
+}
+@theme "dusk.rasi"
