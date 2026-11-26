@@ -1,7 +1,7 @@
 {
   "layer": "top",
   "position": "top",
-  "height": 36,
+  "height": 48,
   "margin-top": 8,
   "margin-left": 14,
   "margin-right": 14,
@@ -18,6 +18,7 @@
     "memory",
     "network",
     "pulseaudio",
+    "custom/notifications",
     "tray"
   ],
   "niri/workspaces": {
@@ -55,5 +56,25 @@
   "tray": {
     "icon-size": 16,
     "spacing": 7
+  },
+  "custom/notifications": {
+    "exec": "swaync-client --subscribe-waybar",
+    "return-type": "json",
+    "format": "{icon} {0}",
+    "format-icons": {
+      "none": "Alerts",
+      "notification": "Alerts",
+      "dnd-none": "Quiet",
+      "dnd-notification": "Quiet",
+      "inhibited-none": "Paused",
+      "inhibited-notification": "Paused",
+      "dnd-inhibited-none": "Quiet",
+      "dnd-inhibited-notification": "Quiet"
+    },
+    "on-click": "swaync-client --toggle-panel",
+    "on-click-right": "swaync-client --toggle-dnd",
+    "on-click-middle": "swaync-client --close-all",
+    "exec-on-event": false,
+    "restart-interval": 3
   }
 }

@@ -386,6 +386,9 @@ binds {
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+T hotkey-overlay-title="Open Kitty" { spawn "kitty"; }
     Mod+D hotkey-overlay-title="Open Rofi" { spawn "rofi" "-show" "drun"; }
+    Mod+N hotkey-overlay-title="Toggle notification center" { spawn "swaync-client" "--toggle-panel"; }
+    Mod+Shift+N hotkey-overlay-title="Toggle notification quiet mode" { spawn "swaync-client" "--toggle-dnd"; }
+    Mod+Ctrl+N hotkey-overlay-title="Dismiss all notifications" { spawn "swaync-client" "--close-all"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
@@ -665,3 +668,15 @@ window-rule {
 }
 
 spawn-at-startup "sh" "-c" "exec swaybg -i $HOME/.config/niri/wanderer_coffee.jpg -m fill"
+
+layer-rule {
+    match namespace="^swaync-control-center$"
+    geometry-corner-radius 20
+
+    background-effect {
+        blur true
+        xray false
+        noise 0.015
+        saturation 0.9
+    }
+}

@@ -5,11 +5,12 @@
   min-height: 0;
 }
 window#waybar { background-color: transparent; color: #f5eced; border-radius: 11px; }
-#workspaces, #window, #clock, #cpu, #memory, #network, #pulseaudio, #tray {
+#workspaces, #window, #clock, #cpu, #memory, #network, #pulseaudio, #custom-notifications, #tray {
   background-color: rgba(91, 77, 108, 0.82);
   border: 1px solid rgba(227, 207, 233, 0.23);
   border-radius: 11px;
   padding: 0 10px;
+  margin-bottom: 12px;
 }
 #workspaces { padding: 3px; }
 #workspaces button {
@@ -33,3 +34,10 @@ window#waybar.empty #window { background: transparent; border-color: transparent
 #network.disconnected, #pulseaudio.muted { color: #e697a1; }
 tooltip { background: #292535; border: 1px solid rgba(227, 207, 233, 0.23); border-radius: 8px; }
 tooltip label { color: #f1e5db; }
+
+#custom-notifications { color: #f1d9f0; }
+#custom-notifications.dnd-none, #custom-notifications.dnd-notification,
+#custom-notifications.dnd-inhibited-none, #custom-notifications.dnd-inhibited-notification {
+  color: #302236;
+  background-color: #f1cdb5;
+}
