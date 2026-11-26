@@ -305,7 +305,7 @@ window-rule {
 }
 
 // 加载桌面壁纸。
-spawn-at-startup "sh" "-c" "exec swaybg -i $HOME/.config/niri/wanderer_coffee.jpg -m fill"
+spawn-at-startup "sh" "-c" "exec \"$HOME/.config/waybar/control-center/wallpaper\""
 
 layer-rule {
     match namespace="^swaync-control-center$"
@@ -327,5 +327,16 @@ window-rule {
     background-effect {
         blur true
         xray false
+    }
+}
+
+layer-rule {
+    match namespace="^dusk-control$"
+    geometry-corner-radius 24
+
+    background-effect {
+        blur true
+        xray false
+        noise 0.015
     }
 }

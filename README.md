@@ -20,3 +20,11 @@ Arch Linux 上的 Dusk 桌面配置，包含 Niri、Waybar、SwayNotificationCen
 ## Waybar 媒体控制
 
 安装 Arch 的 `playerctl` 包。Waybar 在检测到 MPRIS 播放器时显示媒体标题和播放控件。上一首和下一首取决于播放器或网页提供的操作。
+
+## Waybar 控制中心
+
+点击 Waybar 最右侧的下拉箭头打开或关闭控制中心。面板提供媒体播放、音量与亮度、显示、网络、蓝牙、天气和壁纸设置。
+
+- Arch Linux 依赖包括 `python-gobject`、`python-cairo`、`gtk3`、`gtk-layer-shell`、`playerctl`、`wireplumber`、`brightnessctl`、`wdisplays`、`networkmanager`、`nm-connection-editor`、`bluez-utils`、`blueman`、`pavucontrol`、`swaybg` 和 `noto-fonts-cjk`。亮度调节需要硬件背光。
+- 复制配置时保留 `.config/waybar/control-center/wallpaper` 的执行权限。Niri 登录后通过它加载已选壁纸，默认使用仓库里的咖啡壁纸。
+- 天气使用 [Open-Meteo](https://open-meteo.com/)，地图来自 [OpenStreetMap](https://www.openstreetmap.org/copyright)。最近查询的城市和地图缓存保存在用户本机。

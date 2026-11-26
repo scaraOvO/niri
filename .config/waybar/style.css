@@ -5,7 +5,7 @@
   min-height: 0;
 }
 window#waybar { background-color: transparent; color: #f5eced; border-radius: 11px; }
-#workspaces, #window, #clock, #cpu, #memory, #network, #pulseaudio, #custom-notifications, #tray {
+#workspaces, #window, #clock, #cpu, #memory, #network, #pulseaudio, #custom-notifications, #tray, #custom-control-center {
   background-color: rgba(91, 77, 108, 0.82);
   border: 1px solid rgba(227, 207, 233, 0.23);
   border-radius: 11px;
@@ -76,3 +76,11 @@ tooltip label { color: #f1e5db; }
 #mpris.media-next { margin-right: 4px; }
 #mpris.media-prev:hover, #mpris.media-next:hover { background: #756187; }
 #mpris.media-toggle:hover { background: #ffddc6; }
+
+#custom-control-center {
+  font-family: "Symbols Nerd Font Mono";
+  font-size: 16px;
+  color: #34273d;
+  background: #f1cdb5;
+}
+#custom-control-center:hover { background: #ffddc6; }

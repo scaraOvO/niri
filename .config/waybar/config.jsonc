@@ -20,7 +20,8 @@
     "network",
     "pulseaudio",
     "custom/notifications",
-    "tray"
+    "tray",
+    "custom/control-center"
   ],
   "niri/workspaces": {
     "format": "{name}",
@@ -130,5 +131,10 @@
     "format": "",
     "tooltip-format": "Next track",
     "on-click": "playerctl --player=playerctld,%any next"
+  },
+  "custom/control-center": {
+    "format": "",
+    "tooltip-format": "控制中心",
+    "on-click": "niri msg action spawn-sh -- 'exec python3 \"$HOME/.config/waybar/control-center/panel.py\" >>\"$XDG_RUNTIME_DIR/dusk-control.log\" 2>&1'"
   }
 }

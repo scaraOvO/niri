@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+config_dir=${XDG_CONFIG_HOME:-"$HOME/.config"}
+image="$config_dir/waybar/control-center/wallpaper.png"
+if [ ! -s "$image" ]; then
+    image="$config_dir/niri/wanderer_coffee.jpg"
+fi
+exec swaybg -i "$image" -m fill
