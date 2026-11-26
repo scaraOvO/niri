@@ -22,8 +22,13 @@
     "tray"
   ],
   "niri/workspaces": {
-    "format": "{name}",
-    "disable-scroll": true
+    "format": "{icon}",
+    "disable-scroll": true,
+    "format-icons": {
+      "active": "",
+      "default": "",
+      "urgent": ""
+    }
   },
   "niri/window": {
     "format": "{}",
@@ -31,27 +36,34 @@
     "tooltip": false
   },
   "clock": {
-    "format": "{:%H:%M  |  %m/%d}",
+    "format": "  {:%H:%M  |  %m/%d}",
     "tooltip-format": "<tt>{calendar}</tt>",
-    "format-alt": "{:%Y-%m-%d  %H:%M:%S}"
+    "format-alt": "  {:%Y-%m-%d  %H:%M:%S}"
   },
   "cpu": {
-    "format": "CPU {usage}%"
+    "format": "  {usage}%"
   },
   "memory": {
-    "format": "RAM {percentage}%"
+    "format": "󰍛  {percentage}%"
   },
   "network": {
-    "format-wifi": "Wi-Fi {signalStrength}%",
-    "format-ethernet": "LAN",
-    "format-disconnected": "Offline",
+    "format-wifi": "  {signalStrength}%",
+    "format-ethernet": "",
+    "format-disconnected": "",
     "tooltip-format": "{ifname} {ipaddr}"
   },
   "pulseaudio": {
-    "format": "VOL {volume}%",
-    "format-muted": "Muted",
+    "format": "{icon}  {volume}%",
+    "format-muted": "",
     "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    "scroll-step": 3
+    "scroll-step": 3,
+    "format-icons": {
+      "default": [
+        "",
+        "",
+        ""
+      ]
+    }
   },
   "tray": {
     "icon-size": 16,
@@ -62,14 +74,14 @@
     "return-type": "json",
     "format": "{icon} {0}",
     "format-icons": {
-      "none": "Alerts",
-      "notification": "Alerts",
-      "dnd-none": "Quiet",
-      "dnd-notification": "Quiet",
-      "inhibited-none": "Paused",
-      "inhibited-notification": "Paused",
-      "dnd-inhibited-none": "Quiet",
-      "dnd-inhibited-notification": "Quiet"
+      "none": "",
+      "notification": "",
+      "dnd-none": "",
+      "dnd-notification": "",
+      "inhibited-none": "",
+      "inhibited-notification": "",
+      "dnd-inhibited-none": "",
+      "dnd-inhibited-notification": ""
     },
     "on-click": "swaync-client --toggle-panel",
     "on-click-right": "swaync-client --toggle-dnd",
