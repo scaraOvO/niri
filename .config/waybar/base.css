@@ -1,0 +1,88 @@
+* {
+  font-family: "Adwaita Sans", "Symbols Nerd Font Mono", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 0;
+}
+window#waybar { background-color: transparent; color: #f5eced; border-radius: 11px; }
+#workspaces, #window, #custom-island, #network, #pulseaudio, #custom-notifications, #tray, #custom-control-center {
+  background-color: rgba(91, 77, 108, 0.82);
+  border: 1px solid rgba(227, 207, 233, 0.23);
+  border-radius: 11px;
+  padding: 0 10px;
+  margin-bottom: 12px;
+  box-shadow: -1px 1px 2px rgba(20, 13, 28, 0.32), 1px 1px 2px rgba(20, 13, 28, 0.32);
+}
+#workspaces { padding: 3px; }
+#workspaces button {
+  padding: 0 9px;
+  color: #f2e5ee;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+#workspaces button:hover { background: rgba(232, 208, 238, 0.24); }
+#workspaces button.active { background: #f1cdb5; color: #302236; }
+#workspaces button.urgent { background: #e697a1; color: #211e30; }
+window#waybar.empty #window { background: transparent; border-color: transparent; box-shadow: none; }
+#custom-island { padding: 0 16px; color: #ffe0c8; }
+#network { color: #d3f2ec; }
+#pulseaudio { color: #f1e5db; }
+#network.disconnected, #pulseaudio.muted { color: #e697a1; }
+tooltip { background: #292535; border: 1px solid rgba(227, 207, 233, 0.23); border-radius: 8px; }
+tooltip label { color: #f1e5db; }
+
+#custom-notifications { color: #f1d9f0; }
+#custom-notifications.dnd-none, #custom-notifications.dnd-notification,
+#custom-notifications.dnd-inhibited-none, #custom-notifications.dnd-inhibited-notification {
+  color: #302236;
+  background-color: #f1cdb5;
+}
+
+/* 媒体标题和播放按钮共用一块底板。 */
+#media:not(.empty) {
+  margin-bottom: 12px;
+  background: rgba(82, 67, 101, 0.86);
+  border: 1px solid rgba(227, 207, 233, 0.28);
+  border-radius: 11px;
+  box-shadow: -1px 1px 2px rgba(20, 13, 28, 0.32),
+               1px 1px 2px rgba(20, 13, 28, 0.32);
+}
+#mpris.media-title {
+  color: #ede3f0;
+  padding: 0 12px;
+}
+#mpris.media-prev, #mpris.media-toggle, #mpris.media-next {
+  font-family: "Symbols Nerd Font Mono";
+  min-width: 26px;
+  color: #ede3f0;
+}
+#mpris.media-prev, #mpris.media-next {
+  margin: 4px 0;
+  border-radius: 7px;
+}
+#mpris.media-toggle {
+  min-height: 26px;
+  margin: 4px;
+  padding: 0;
+  border-radius: 50%;
+  color: #34273d;
+  background: #f1cdb5;
+}
+#mpris.media-next { margin-right: 4px; }
+#mpris.media-prev:hover, #mpris.media-next:hover { background: #756187; }
+#mpris.media-toggle:hover { background: #ffddc6; }
+
+#custom-control-center {
+  font-family: "Symbols Nerd Font Mono";
+  font-size: 16px;
+  color: #34273d;
+  background: #f1cdb5;
+}
+#custom-control-center:hover { background: #ffddc6; }
+
+/* 中间状态胶囊和紧凑的托盘。 */
+#custom-island { min-width: 75px; border-radius: 18px; }
+#tray { padding: 0 8px; }

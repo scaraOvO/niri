@@ -1,0 +1,6 @@
+[Unit]
+Description=Dusk 桌面外观同步
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -B %h/.config/waybar/control-center/appearance.py

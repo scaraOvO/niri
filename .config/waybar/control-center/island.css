@@ -1,0 +1,47 @@
+#dusk-island { background: transparent; color: #f3e7f1; }
+#dusk-island #island-frame {
+  background: rgba(42, 32, 55, 0.91);
+  border: 1px solid rgba(221, 193, 225, 0.42);
+  border-radius: 20px;
+  padding: 17px 20px;
+  font-family: "Adwaita Sans", "Noto Sans CJK SC", sans-serif;
+  font-size: 13px;
+}
+#dusk-island .heading { color: #ecc0aa; font-weight: 700; }
+#dusk-island .hero { font-size: 32px; font-weight: 700; }
+#dusk-island .hero.date { font-size: 24px; }
+#dusk-island .footnote, #dusk-island .detail { color: #dfcfe5; }
+#dusk-island progressbar trough {
+  min-height: 7px; border: none; border-radius: 12px; background: #5f4d71;
+}
+#dusk-island progressbar progress {
+  min-height: 7px; border: none; border-radius: 12px; background: #e7b5a1;
+}
+#dusk-island calendar { color: inherit; background: transparent; }
+#dusk-island calendar:selected { background: #e7b5a1; color: #3c263c; }
+#dusk-island.light { color: #35283c; }
+#dusk-island.light #island-frame {
+  background: rgba(255, 246, 237, 0.93);
+  border-color: rgba(125, 93, 125, 0.40);
+}
+#dusk-island.light .heading { color: #86493c; }
+#dusk-island.light .footnote, #dusk-island.light .detail { color: #55455c; }
+#dusk-island.light progressbar trough { background: #e9d8ec; }
+#dusk-island.light progressbar progress { background: #b5778c; }
+
+#dusk-island .source { font-size: 17px; font-weight: 700; margin-top: 5px; }
+
+#dusk-island #island-frame { padding: 0; border-radius: 18px; }
+#dusk-island #island-head {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+  color: inherit;
+  border-radius: 16px;
+  padding: 0 15px;
+  font-family: "Adwaita Sans", "Symbols Nerd Font Mono", sans-serif;
+  font-weight: 600;
+}
+#dusk-island #island-head:hover { background-color: rgba(216, 186, 220, 0.12); }
+#dusk-island #island-content { padding: 9px 20px 17px; }

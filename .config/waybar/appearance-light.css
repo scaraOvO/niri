@@ -1,0 +1,26 @@
+window#waybar { color: #3d3047; }
+#workspaces, #window, #custom-island, #network, #pulseaudio,
+#custom-notifications, #tray, #custom-control-center, #media:not(.empty) {
+  background: rgba(255, 245, 239, 0.91);
+  border-color: rgba(130, 102, 136, 0.30);
+  box-shadow: 0 1px 3px rgba(54, 42, 59, 0.22);
+}
+#workspaces button { color: #53405d; }
+#workspaces button:hover { background: #eee0ed; }
+#workspaces button.active, #custom-control-center, #mpris.media-toggle {
+  background: #f3cbb7; color: #58372f;
+}
+#workspaces button.urgent { background: #f3c7cf; color: #702c42; }
+#custom-control-center:hover, #mpris.media-toggle:hover { background: #f9dac8; }
+#custom-island { color: #774538; }
+#custom-notifications { color: #634674; }
+#network { color: #255e57; }
+#pulseaudio, #mpris.media-title, #mpris.media-prev, #mpris.media-next { color: #4a3852; }
+#mpris.media-prev:hover, #mpris.media-next:hover { background: #eadbe9; }
+#network.disconnected, #pulseaudio.muted { color: #96364f; }
+#custom-notifications.dnd-none, #custom-notifications.dnd-notification,
+#custom-notifications.dnd-inhibited-none, #custom-notifications.dnd-inhibited-notification {
+  background: #e9d7ed; color: #5e426d;
+}
+tooltip { background: #fff6ef; border-color: #c6aebe; }
+tooltip label { color: #3d3047; }

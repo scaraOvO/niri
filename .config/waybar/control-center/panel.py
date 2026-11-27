@@ -8,6 +8,7 @@ import re
 import subprocess
 import time
 from urllib.parse import urlencode
+import appearance
 from urllib.request import Request, urlopen
 
 import gi
@@ -182,6 +183,8 @@ class ExpressiveTrack(Gtk.Overlay):
         y = widget.get_allocated_height() / 2
         x = 10 + max(0, width-20) * self.position
         alpha = 1 if self.is_sensitive() else .40
+        light = not self.get_settings().get_property("gtk-application-prefer-dark-theme")
+        accent = tuple(component * .69 for component in self.color) if light else self.color
         handle = 2.6 + self.emphasis * 1.4
         height = 20 + self.emphasis * 2
         gap = handle + 6
@@ -197,14 +200,14 @@ class ExpressiveTrack(Gtk.Overlay):
             cr.line_to(right - stroke / 2 + .01, center)
             cr.stroke()
 
-        pill(1, x-gap, y, height, self.color, alpha)
-        pill(x+gap, width-1, y, height, (.33, .27, .41), alpha)
+        pill(1, x-gap, y, height, accent, alpha)
+        pill(x+gap, width-1, y, height, (.75, .64, .77) if light else (.33, .27, .41), alpha)
         if x < width - 26:
-            pill(width-13, width-9, y, 4, self.color, .7*alpha)
+            pill(width-13, width-9, y, 4, accent, .7*alpha)
         if self.scale.has_focus():
-            pill(x-handle-3, x+handle+3, y, 40, self.color, .26*alpha)
+            pill(x-handle-3, x+handle+3, y, 40, accent, .26*alpha)
         # 用直线描边绘制竖直圆头滑块。
-        cr.set_source_rgba(*self.color, alpha)
+        cr.set_source_rgba(*accent, alpha)
         cr.set_line_width(2*handle)
         cr.set_line_cap(1)
         half = 13 + 2*self.emphasis
@@ -222,18 +225,65 @@ class ControlCenter(Gtk.Application):
 
     def do_activate(self):
         if self.window is not None:
-            self.window.destroy()
+            self.close_panel()
             return
+        self.closing = False
         self.build()
         self.window.show_all()
+        GLib.idle_add(self.reveal_panel)
         self.refresh()
         self.timer = GLib.timeout_add_seconds(2, self.refresh)
+
+    def reveal_panel(self):
+        if not self.closing:
+            outer = self.panel_revealer.get_child()
+            target = max(590, outer.get_preferred_height_for_width(860)[1])
+            self.panel_revealer.set_reveal_child(True)
+            self.animate_panel_height(target, 275)
+        return False
+
+    def close_panel(self):
+        if self.closing:
+            return
+        self.closing = True
+        self.panel_revealer.set_reveal_child(False)
+        self.animate_panel_height(1, 245)
+
+    def animate_panel_height(self, target, duration):
+        if getattr(self, "panel_tick", None):
+            self.window.remove_tick_callback(self.panel_tick)
+        start = self.window.get_size()[1]
+        began = GLib.get_monotonic_time()
+        if not self.window.get_settings().get_property("gtk-enable-animations"):
+            self.panel_revealer.set_size_request(860, target)
+            if self.closing:
+                self.destroy_panel()
+            return
+
+        def frame(_widget, _clock):
+            progress = min(1, (GLib.get_monotonic_time() - began) / (duration * 1000))
+            eased = 1 - (1 - progress) ** 3
+            height = round(start + (target - start) * eased)
+            self.panel_revealer.set_size_request(860, max(1, height))
+            if progress >= 1:
+                self.panel_tick = None
+                if self.closing:
+                    self.destroy_panel()
+                return False
+            return True
+
+        self.panel_tick = self.window.add_tick_callback(frame)
+
+    def destroy_panel(self):
+        if self.window is not None:
+            self.window.destroy()
+        return False
 
     def build(self):
         self.window = Gtk.ApplicationWindow(application=self)
         self.window.set_decorated(False)
-        self.window.set_default_size(860, 590)
-        self.window.set_resizable(False)
+        self.window.set_default_size(860, -1)
+        self.window.set_resizable(True)
         self.window.set_app_paintable(True)
         self.window.set_visual(self.window.get_screen().get_rgba_visual())
         self.window.set_name("dusk-control")
@@ -247,13 +297,22 @@ class ControlCenter(Gtk.Application):
             GtkLayerShell.set_anchor(self.window, edge, True)
             GtkLayerShell.set_margin(self.window, edge, margin)
         GtkLayerShell.set_exclusive_zone(self.window, 0)
-        css = Gtk.CssProvider()
-        css.load_from_path(str(HERE / "style.css"))
-        Gtk.StyleContext.add_provider_for_screen(self.window.get_screen(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.css = Gtk.CssProvider()
+        self.active_theme = None
+        self.reload_appearance()
+        Gtk.StyleContext.add_provider_for_screen(
+            self.window.get_screen(), self.css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
 
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=19)
         outer.set_name("frame")
-        self.window.add(outer)
+        outer.set_size_request(-1, 590)
+        self.panel_revealer = Gtk.Revealer(
+            transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN, transition_duration=275
+        )
+        self.panel_revealer.set_size_request(860, 1)
+        self.panel_revealer.add(outer)
+        self.window.add(self.panel_revealer)
         body = Gtk.Box(spacing=20)
         outer.pack_start(body, True, True, 0)
         sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -270,6 +329,7 @@ class ControlCenter(Gtk.Application):
             ("bluetooth", "\uf294", "蓝牙", self.bluetooth_page),
             ("weather", "\uf0c2", "天气", self.weather_page),
             ("wallpaper", "\uf03e", "壁纸", self.wallpaper_page),
+            ("appearance", "\uf1fc", "外观", self.appearance_page),
         ):
             tab = button(f"{glyph}  {title}", lambda name=ident: self.select(name))
             sidebar.pack_start(tab, False, False, 0)
@@ -279,7 +339,7 @@ class ControlCenter(Gtk.Application):
 
     def keypress(self, _widget, event):
         if event.keyval == Gdk.KEY_Escape:
-            self.window.destroy()
+            self.close_panel()
             return True
         return False
 
@@ -431,6 +491,49 @@ class ControlCenter(Gtk.Application):
         if city:
             self.city.set_text(city)
             self.query_weather()
+
+    def appearance_page(self):
+        page = self.page()
+        self.appearance_status = label("", "muted")
+        self.appearance_buttons = {}
+        for key, icon, title in (
+            ("light", "\uf185", "浅色"),
+            ("dark", "\uf186", "深色"),
+            ("auto", "\uf017", "自动"),
+        ):
+            widget = button(f"{icon}  {title}", lambda mode=key: self.set_appearance(mode))
+            self.appearance_buttons[key] = widget
+        self.put(page, row(*self.appearance_buttons.values()), self.appearance_status,
+                 label("自动模式按本机时间切换：07:00 使用浅色，19:00 使用深色。", "muted"))
+        self.update_appearance_controls()
+        return page
+
+    def set_appearance(self, mode):
+        try:
+            appearance.apply(mode)
+            self.reload_appearance()
+        except OSError:
+            self.appearance_status.set_text("主题切换失败。")
+
+    def reload_appearance(self):
+        active = appearance.effective()
+        if active != self.active_theme:
+            self.css.load_from_path(str(HERE / "style.css"))
+            self.active_theme = active
+            self.window.get_settings().set_property("gtk-application-prefer-dark-theme", active == "dark")
+            for control, _, _ in getattr(self, "sliders", {}).values():
+                control.canvas.queue_draw()
+        if hasattr(self, "appearance_buttons"):
+            self.update_appearance_controls()
+
+    def update_appearance_controls(self):
+        mode = appearance.read_mode()
+        for key, widget in self.appearance_buttons.items():
+            css = widget.get_style_context()
+            css.add_class("primary-action") if key == mode else css.remove_class("primary-action")
+        names = {"dark": "深色", "light": "浅色"}
+        self.appearance_status.set_text("当前使用" + names[self.active_theme] +
+                                        (" · 自动切换" if mode == "auto" else ""))
 
     def wallpaper_page(self):
         page = self.page("选择本地图片，设置会在重新登录后保留。")
@@ -810,6 +913,7 @@ class ControlCenter(Gtk.Application):
     def refresh(self):
         if self.window is None:
             return False
+        self.reload_appearance()
         page = self.stack.get_visible_child_name()
         try:
             if page == "media":

@@ -1,0 +1,11 @@
+[Unit]
+Description=Dusk 桌面外观自动切换
+PartOf=graphical-session.target
+
+[Timer]
+OnStartupSec=8s
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+
+[Install]
+WantedBy=graphical-session.target

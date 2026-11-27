@@ -6,4 +6,4 @@ configuration {
     display-run: "Run";
     drun-display-format: "{name}";
 }
-@theme "dusk.rasi"
+@theme "appearance.rasi"

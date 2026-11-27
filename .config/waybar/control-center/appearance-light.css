@@ -1,0 +1,32 @@
+#dusk-control { color: #31283a; }
+#frame {
+  background-color: rgba(255, 247, 236, 0.86);
+  border-color: rgba(123, 90, 120, 0.40);
+}
+#dusk-control .muted { color: #514358; }
+#dusk-control .temperature, #dusk-control .sun-symbol { color: #82493b; }
+#dusk-control #sidebar button { color: #4b3a53; }
+#dusk-control #sidebar button:hover, #dusk-control #sidebar button:focus { color: #683d51; }
+#dusk-control #sidebar button.selected { color: #784637; border-left-color: #a65849; }
+#dusk-control button, #dusk-control entry {
+  background-color: #ede0ed;
+  color: #45324e;
+  border-color: transparent;
+}
+#dusk-control button:hover { background-color: #e4cfe4; }
+#dusk-control button:active, #dusk-control button:checked { background-color: #d9bddb; }
+#dusk-control button:focus, #dusk-control entry:focus {
+  box-shadow: inset 0 0 0 2px rgba(130, 74, 139, 0.42);
+}
+#dusk-control button.primary-action, #dusk-control button.play,
+#dusk-control button.weather-search-toggle:checked {
+  background-color: #f1c6b0;
+  color: #58372f;
+}
+#dusk-control button:disabled { opacity: 0.50; }
+#dusk-control .slider-card { background-color: rgba(229, 214, 232, 0.72); }
+#dusk-control .slider-label { color: #3f3048; }
+#dusk-control .slider-value { color: #654675; background-color: #f7edf4; }
+#dusk-control .weather-map button { background: transparent; }
+#dusk-control .weather-map button label { color: #633f5d; }
+#dusk-control .weather-map button:hover { background-color: #eadbe8; }

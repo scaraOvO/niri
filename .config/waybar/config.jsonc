@@ -11,16 +11,14 @@
     "niri/window"
   ],
   "modules-center": [
-    "clock"
+    "custom/island"
   ],
   "modules-right": [
     "group/media",
-    "cpu",
-    "memory",
+    "tray",
     "network",
     "pulseaudio",
     "custom/notifications",
-    "tray",
     "custom/control-center"
   ],
   "niri/workspaces": {
@@ -37,17 +35,6 @@
       "^(thunar|Thunar|org\\.xfce\\.Thunar)$": "Thunar",
       "^org\\.gnome\\.Nautilus$": "Files"
     }
-  },
-  "clock": {
-    "format": "  {:%H:%M  |  %m/%d}",
-    "tooltip-format": "<tt>{calendar}</tt>",
-    "format-alt": "  {:%Y-%m-%d  %H:%M:%S}"
-  },
-  "cpu": {
-    "format": "  {usage}%"
-  },
-  "memory": {
-    "format": "󰍛  {percentage}%"
   },
   "network": {
     "format-wifi": "  {signalStrength}%",
@@ -136,5 +123,17 @@
     "format": "",
     "tooltip-format": "控制中心",
     "on-click": "niri msg action spawn-sh -- 'exec python3 \"$HOME/.config/waybar/control-center/panel.py\" >>\"$XDG_RUNTIME_DIR/dusk-control.log\" 2>&1'"
+  },
+  "custom/island": {
+    "exec": "python3 -B \"$HOME/.config/waybar/control-center/island.py\" status",
+    "interval": 1,
+    "return-type": "json",
+    "format": "{0}",
+    "tooltip": false,
+    "smooth-scrolling-threshold": 1,
+    "on-scroll-up": "python3 -B \"$HOME/.config/waybar/control-center/island.py\" previous",
+    "on-scroll-down": "python3 -B \"$HOME/.config/waybar/control-center/island.py\" next",
+    "on-click": "niri msg action spawn-sh -- 'exec python3 -B \"$HOME/.config/waybar/control-center/island.py\" panel >>\"$XDG_RUNTIME_DIR/dusk-island.log\" 2>&1'",
+    "signal": 12
   }
 }

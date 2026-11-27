@@ -1,0 +1,37 @@
+.control-center {
+  background: linear-gradient(150deg, rgba(255, 247, 237, 0.90), rgba(244, 231, 244, 0.89));
+  color: #3b2d45;
+  border-color: #c5adbf;
+}
+.notification-row .notification-background .notification,
+.control-center .control-center-list .notification-row .notification-background .notification {
+  background: rgba(255, 249, 243, 0.96);
+  color: #3b2d45;
+  border-color: #bc9cac;
+}
+.notification-row .notification-background .notification.low { background: #eff6ef; border-color: #73a698; }
+.notification-row .notification-background .notification.critical { background: #fbedee; border-color: #b77588; }
+.notification-row .notification-background .notification .notification-default-action,
+.control-center .control-center-list .notification-row .notification-background .notification .notification-default-action {
+  color: #3b2d45;
+}
+.notification-row .notification-background .notification .notification-default-action:hover,
+.control-center .control-center-list .notification .notification-action:hover {
+  background: rgba(191, 159, 194, 0.36);
+}
+.notification-row .notification-background .notification .notification-default-action .notification-content .summary,
+.notification-content .summary { color: #37273e; }
+.notification-row .notification-background .notification .notification-default-action .notification-content .body,
+.notification-content .body { color: #57445f; }
+.control-center .control-center-list .notification-row .notification-background .notification .notification-content .time {
+  color: #68516b;
+}
+.control-center .control-center-list .notification-group.collapsed .notification-row:not(:last-child) .notification-background .notification {
+  background: transparent;
+  border-color: transparent;
+}
+.widget-title > label { color: #834c40; }
+.widget-title > button { background: #e9d9e8; color: #4d3956; border-color: #c6aebe; }
+.widget-title > button:hover { background: #dec7df; }
+.widget-dnd { background: #f0e2ef; color: #4d3956; }
+.widget-dnd switch:checked { background: #d99c85; }

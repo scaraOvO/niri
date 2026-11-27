@@ -340,3 +340,13 @@ layer-rule {
         noise 0.015
     }
 }
+
+layer-rule {
+    match namespace="^dusk-island$"
+    geometry-corner-radius 20
+
+    background-effect {
+        blur true
+        xray false
+    }
+}

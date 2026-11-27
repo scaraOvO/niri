@@ -28,3 +28,8 @@ Arch Linux 上的 Dusk 桌面配置，包含 Niri、Waybar、SwayNotificationCen
 - Arch Linux 依赖包括 `python-gobject`、`python-cairo`、`gtk3`、`gtk-layer-shell`、`playerctl`、`wireplumber`、`brightnessctl`、`wdisplays`、`networkmanager`、`nm-connection-editor`、`bluez-utils`、`blueman`、`pavucontrol`、`swaybg` 和 `noto-fonts-cjk`。亮度调节需要硬件背光。
 - 复制配置时保留 `.config/waybar/control-center/wallpaper` 的执行权限。Niri 登录后通过它加载已选壁纸，默认使用仓库里的咖啡壁纸。
 - 天气使用 [Open-Meteo](https://open-meteo.com/)，地图来自 [OpenStreetMap](https://www.openstreetmap.org/copyright)。最近查询的城市和地图缓存保存在用户本机。
+
+## 外观和状态小岛
+
+- 控制中心的「外观」支持浅色、深色和自动模式。复制配置时保留符号链接，再运行 `systemctl --user daemon-reload` 及 `systemctl --user enable --now dusk-appearance.timer`，启用 07:00／19:00 自动切换。
+- Waybar 中间小岛用滚轮切换时间、日期、系统占用和 Token 用量，点击展开详情。用量来自本机 Codex、Claude Code 或 DeepSeek Harness 的会话日志，有记录才显示。压缩的 DeepSeek Harness 日志需要 `zstd`。

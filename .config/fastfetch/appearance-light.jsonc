@@ -1,0 +1,47 @@
+{
+  "logo": {
+    "type": "small",
+    "source": "arch",
+    "padding": {
+      "top": 1,
+      "left": 2,
+      "right": 4
+    },
+    "color": {
+      "1": "#92503c",
+      "2": "#714f7e"
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "#604273",
+      "title": "#844634",
+      "output": "#382d40"
+    }
+  },
+  "modules": [
+    "title",
+    {
+      "type": "separator",
+      "string": "-"
+    },
+    {
+      "type": "os",
+      "key": "OS    "
+    },
+    {
+      "type": "wm",
+      "key": "Desk  "
+    },
+    {
+      "type": "shell",
+      "key": "Shell "
+    },
+    {
+      "type": "memory",
+      "key": "RAM   "
+    },
+    "break"
+  ]
+}
