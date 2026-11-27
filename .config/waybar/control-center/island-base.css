@@ -8,8 +8,8 @@
   font-size: 13px;
 }
 #dusk-island .heading { color: #ecc0aa; font-weight: 700; }
-#dusk-island .hero { font-size: 32px; font-weight: 700; }
-#dusk-island .hero.date { font-size: 24px; }
+#dusk-island .hero { font-size: 44px; font-weight: 800; }
+#dusk-island .hero.date { font-size: 25px; font-weight: 700; }
 #dusk-island .footnote, #dusk-island .detail { color: #dfcfe5; }
 #dusk-island progressbar trough {
   min-height: 7px; border: none; border-radius: 12px; background: #5f4d71;
@@ -17,8 +17,6 @@
 #dusk-island progressbar progress {
   min-height: 7px; border: none; border-radius: 12px; background: #e7b5a1;
 }
-#dusk-island calendar { color: inherit; background: transparent; }
-#dusk-island calendar:selected { background: #e7b5a1; color: #3c263c; }
 #dusk-island.light { color: #35283c; }
 #dusk-island.light #island-frame {
   background: rgba(255, 246, 237, 0.93);
@@ -43,5 +41,78 @@
   font-family: "Adwaita Sans", "Symbols Nerd Font Mono", sans-serif;
   font-weight: 600;
 }
-#dusk-island #island-head:hover { background-color: rgba(216, 186, 220, 0.12); }
-#dusk-island #island-content { padding: 9px 20px 17px; }
+#dusk-island #island-content { padding: 18px 28px 26px; }
+
+#dusk-island .month-calendar {
+  background: alpha(currentColor, 0.045);
+  border-radius: 18px;
+  padding: 10px 14px 13px;
+}
+#dusk-island .month-title { font-size: 16px; font-weight: 700; }
+#dusk-island .weekday {
+  color: alpha(currentColor, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 0;
+}
+#dusk-island .month-navigation, #dusk-island .calendar-day {
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  box-shadow: none;
+  text-shadow: none;
+  padding: 0;
+  min-width: 34px;
+  min-height: 32px;
+  font-weight: 600;
+}
+#dusk-island .month-navigation {
+  background: alpha(currentColor, 0.07);
+  font-size: 22px;
+}
+#dusk-island .calendar-day.outside-month { color: alpha(currentColor, 0.55); }
+#dusk-island .calendar-day.today {
+  border-color: currentColor;
+  font-weight: 800;
+}
+#dusk-island .calendar-day.selected { background: alpha(currentColor, 0.16); }
+#dusk-island .month-navigation:hover,
+#dusk-island .calendar-day:hover { background: alpha(currentColor, 0.23); }
+
+#dusk-island .weather-search-toggle {
+  font-family: "Symbols Nerd Font Mono";
+  color: inherit;
+  padding: 0;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 999px;
+  border: none;
+  box-shadow: none;
+  background: alpha(currentColor, 0.08);
+}
+#dusk-island .weather-search-toggle:hover,
+#dusk-island .weather-search-toggle:checked { background: alpha(currentColor, 0.17); }
+#dusk-island .island-weather .weather-hero { padding: 5px 0 11px; }
+#dusk-island .island-weather .temperature { font-size: 33px; font-weight: 700; }
+#dusk-island .island-weather .track { font-size: 16px; font-weight: 600; }
+#dusk-island .island-weather .muted { color: alpha(currentColor, 0.78); }
+#dusk-island .island-weather .forecast,
+#dusk-island .island-weather .weather-metric { padding: 6px 0; }
+#dusk-island .island-weather .metric-value { font-size: 15px; font-weight: 700; }
+#dusk-island .island-weather .sunlight { padding: 5px 0 2px; }
+#dusk-island .island-weather .sun-symbol {
+  font-family: "Symbols Nerd Font Mono";
+  font-size: 20px;
+}
+#dusk-island .island-weather .weather-map button {
+  min-height: 22px;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 999px;
+  box-shadow: none;
+  background: transparent;
+  font-size: 11px;
+}
+#dusk-island .island-weather .weather-map button label { color: inherit; }
+#dusk-island .island-weather .weather-map button:hover { background: alpha(currentColor, 0.14); }

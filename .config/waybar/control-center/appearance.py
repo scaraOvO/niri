@@ -9,7 +9,7 @@ import wallpaper_colors
 
 CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "dusk-control"
-MODES = ("light", "dark", "auto", "wallpaper")
+MODES = ("light", "dark", "auto", "wallpaper", "glass")
 
 
 def read_mode():
@@ -25,7 +25,7 @@ def resolve(mode, hour, brightness=None):
         return "light" if brightness >= .53 else "dark"
     if mode in ("auto", "wallpaper"):
         return "light" if 7 <= hour < 19 else "dark"
-    return mode
+    return "light" if mode == "glass" else mode
 
 
 def palette_options():
@@ -74,8 +74,10 @@ def apply(chosen=None, source=None, strength=None):
         color_source = wallpaper_colors.sample(CONFIG, STATE) if source == "wallpaper" or mode == "wallpaper" else None
         active = resolve(mode, datetime.now().hour, color_source["brightness"] if color_source else None)
         palette = wallpaper_colors.palette(color_source, active, strength) if source == "wallpaper" and color_source else {}
-        written = [wallpaper_colors.save(path, content)
-                   for path, content in wallpaper_colors.files(CONFIG, palette).items()]
+        files = wallpaper_colors.files(CONFIG, palette)
+        if mode == "glass":
+            wallpaper_colors.glass_surfaces(CONFIG, palette, files)
+        written = [wallpaper_colors.save(path, content) for path, content in files.items()]
         changed_palette = any(written)
         wallpaper_colors.save(STATE / "palette-options.json", json.dumps({"source":source,"strength":strength}))
         wallpaper_colors.save(STATE / "current-palette.json", json.dumps(palette))

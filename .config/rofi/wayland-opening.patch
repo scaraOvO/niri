@@ -1,0 +1,202 @@
+--- a/meson.build
++++ b/meson.build
+@@ -327,6 +327,7 @@
+         wayland_sys_protocols_dir + '/unstable/text-input/text-input-unstable-v3.xml',
+         'protocols/wlr-foreign-toplevel-management-unstable-v1.xml',
+         'protocols/wlr-layer-shell-unstable-v1.xml',
++        'protocols/ext-background-effect-v1.xml',
+     )
+ 
+     if wayland_protocols.version().version_compare('>=1.32')
+--- a/source/wayland/display.c
++++ b/source/wayland/display.c
+@@ -68,6 +68,7 @@
+ #include "primary-selection-unstable-v1-protocol.h"
+ #include "text-input-unstable-v3-protocol.h"
+ #include "wlr-layer-shell-unstable-v1-protocol.h"
++#include "ext-background-effect-v1-protocol.h"
+ 
+ #define wayland_output_get_dpi(output, scale, dimension)                       \
+   ((output)->current.physical_##dimension > 0 && (scale) > 0                   \
+@@ -340,6 +341,101 @@
+   return surface;
+ }
+ 
++/* Animate the mapped launcher by moving its top layer-shell margin. */
++static guint opening_timer;
++static gint64 opening_started;
++static int opening_x_margin, opening_y_margin, opening_offset;
++static gboolean opening_pending, opening_positioned;
++
++static void apply_surface_margin(void) {
++  zwlr_layer_surface_v1_set_margin(wayland->wlr_surface,
++                                   opening_y_margin + opening_offset,
++                                   -opening_x_margin,
++                                   -opening_y_margin - opening_offset,
++                                   opening_x_margin);
++}
++
++static gboolean animate_opening(gpointer data) {
++  double progress = MIN((g_get_monotonic_time() - opening_started) / 270000.0,
++                        1.0);
++  double remaining = 1.0 - progress;
++  int offset = (int)round(-38.0 * remaining * remaining *
++                          (1.0 - 2.5 * progress));
++
++  if (offset != opening_offset) {
++    opening_offset = offset;
++    apply_surface_margin();
++    wl_surface_commit(wayland->surface);
++    wl_display_flush(wayland->display);
++  }
++  if (progress < 1.0) {
++    return G_SOURCE_CONTINUE;
++  }
++  opening_timer = 0;
++  return G_SOURCE_REMOVE;
++}
++
++static struct ext_background_effect_manager_v1 *blur_manager;
++static struct ext_background_effect_surface_v1 *blur_surface;
++static int blur_width, blur_height, blur_scale;
++
++/* Convert the painted launcher silhouette to a surface-local blur region.
++ * Consecutive identical scanlines share one rectangle; empty rows stay clear.
++ */
++static void update_blur_region(cairo_surface_t *surface) {
++  if (blur_manager == NULL ||
++      g_strcmp0(g_getenv("DUSK_ROFI_SPLIT"), "1") != 0) {
++    return;
++  }
++
++  int scale = wayland->scale;
++  int width = cairo_image_surface_get_width(surface) / scale;
++  int height = cairo_image_surface_get_height(surface) / scale;
++  if (blur_surface != NULL && width == blur_width && height == blur_height &&
++      scale == blur_scale) {
++    return;
++  }
++  if (blur_surface == NULL) {
++    blur_surface = ext_background_effect_manager_v1_get_background_effect(
++        blur_manager, wayland->surface);
++  }
++  blur_width = width;
++  blur_height = height;
++  blur_scale = scale;
++
++  struct wl_region *region = wl_compositor_create_region(wayland->compositor);
++  cairo_surface_flush(surface);
++  const unsigned char *pixels = cairo_image_surface_get_data(surface);
++  int stride = cairo_image_surface_get_stride(surface);
++  int run_left = 0, run_right = 0, run_y = 0;
++  for (int y = 0; y <= height; y++) {
++    int left = 0, right = 0;
++    if (y < height) {
++      const uint32_t *row =
++          (const uint32_t *)(pixels + (y * scale + scale / 2) * stride);
++      while (left < width && (row[left * scale + scale / 2] >> 24) == 0) {
++        left++;
++      }
++      right = width;
++      while (right > left &&
++             (row[(right - 1) * scale + scale / 2] >> 24) == 0) {
++        right--;
++      }
++    }
++    if (left == run_left && right == run_right) {
++      continue;
++    }
++    if (run_right > run_left) {
++      wl_region_add(region, run_left, run_y, run_right - run_left, y - run_y);
++    }
++    run_left = left;
++    run_right = right;
++    run_y = y;
++  }
++  ext_background_effect_surface_v1_set_blur_region(blur_surface, region);
++  wl_region_destroy(region);
++}
++
+ void display_surface_commit(cairo_surface_t *surface) {
+   if (surface == NULL || wayland->surface == NULL) {
+     return;
+@@ -349,6 +445,7 @@
+       cairo_surface_get_user_data(surface, &wayland_cairo_surface_user_data);
+   wayland_buffer_pool *pool = buffer->pool;
+ 
++  update_blur_region(surface);
+   cairo_surface_destroy(surface);
+ 
+   wl_surface_damage(wayland->surface, 0, 0, pool->width, pool->height);
+@@ -358,6 +455,11 @@
+   buffer->released = FALSE;
+ 
+   wl_surface_commit(wayland->surface);
++  if (opening_pending) {
++    opening_pending = FALSE;
++    opening_started = g_get_monotonic_time();
++    opening_timer = g_timeout_add(8, animate_opening, NULL);
++  }
+ }
+ 
+ static void wayland_frame_callback(void *data, struct wl_callback *callback,
+@@ -1659,6 +1761,10 @@
+     wayland->compositor =
+         wl_registry_bind(registry, name, &wl_compositor_interface,
+                          MIN(version, WL_COMPOSITOR_INTERFACE_VERSION));
++  } else if (g_strcmp0(interface,
++                      ext_background_effect_manager_v1_interface.name) == 0) {
++    blur_manager = wl_registry_bind(
++        registry, name, &ext_background_effect_manager_v1_interface, 1);
+   } else if (g_strcmp0(interface, zwlr_layer_shell_v1_interface.name) == 0) {
+     wayland->global_names[WAYLAND_GLOBAL_LAYER_SHELL] = name;
+     wayland->layer_shell =
+@@ -1829,6 +1935,17 @@
+ }
+ 
+ static void wayland_surface_destroy(void) {
++  if (blur_surface != NULL) {
++    ext_background_effect_surface_v1_destroy(blur_surface);
++    blur_surface = NULL;
++  }
++  if (opening_timer != 0) {
++    g_source_remove(opening_timer);
++    opening_timer = 0;
++  }
++  opening_pending = FALSE;
++  opening_positioned = FALSE;
++  opening_offset = 0;
+   if (wayland->wlr_surface != NULL) {
+     zwlr_layer_surface_v1_destroy(wayland->wlr_surface);
+     wayland->wlr_surface = NULL;
+@@ -2092,8 +2209,17 @@
+   // we can safely set contradictory margins (e.g. top vs bottom) - at most
+   // one of the margins on a given axis will have effect. This also means that
+   // margin has no effect if the window is centered. :(
+-  zwlr_layer_surface_v1_set_margin(wayland->wlr_surface, y_margin, -x_margin,
+-                                   -y_margin, x_margin);
++  opening_x_margin = x_margin;
++  opening_y_margin = y_margin;
++  if (!opening_positioned && width > 0 && height > 0) {
++    opening_positioned = TRUE;
++    if ((wlr_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP) &&
++        g_strcmp0(g_getenv("DUSK_ROFI_ANIMATE"), "1") == 0) {
++      opening_offset = -38;
++      opening_pending = TRUE;
++    }
++  }
++  apply_surface_margin();
+ }
+ 
+ static void wayland_display_early_cleanup(void) {
+@@ -2110,6 +2236,10 @@
+     return;
+   }
+ 
++  if (blur_manager != NULL) {
++    ext_background_effect_manager_v1_destroy(blur_manager);
++    blur_manager = NULL;
++  }
+   nk_bindings_seat_free(wayland->bindings_seat);
+   g_hash_table_unref(wayland->seats_by_name);
+   g_hash_table_unref(wayland->seats);

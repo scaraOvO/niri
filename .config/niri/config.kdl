@@ -130,7 +130,7 @@ binds {
 
     // 常用应用与通知中心。
     Mod+T hotkey-overlay-title="Open Kitty" { spawn "kitty"; }
-    Mod+D hotkey-overlay-title="Open Rofi" { spawn "rofi" "-show" "drun"; }
+    Mod+D hotkey-overlay-title="Open Rofi" { spawn-sh "exec \"$HOME/.config/rofi/launch\" -show drun"; }
     Mod+N hotkey-overlay-title="Toggle notification center" { spawn "swaync-client" "--toggle-panel"; }
     Mod+Shift+N hotkey-overlay-title="Toggle notification quiet mode" { spawn "swaync-client" "--toggle-dnd"; }
     Mod+Ctrl+N hotkey-overlay-title="Dismiss all notifications" { spawn "swaync-client" "--close-all"; }

@@ -8,16 +8,20 @@ import shutil
 import socket
 import signal
 import time
+from threading import Thread
 
 import appearance
 from usage import available_usage
+from weather import weather, weather_condition
 
+CITY_FILE = appearance.STATE / "weather-city"
+WEATHER_CACHE = appearance.STATE / "island-weather.json"
 MODE_FILE = appearance.STATE / "island-page"
-MODE_NAMES = {"time": "时间", "date": "日期", "tokens": "Token 用量", "system": "系统占用"}
+MODE_NAMES = {"weather": "天气", "time": "时间", "date": "日期", "tokens": "Token 用量", "system": "系统占用"}
 
 
 def pages(usage):
-    return ["time", "date", "tokens", "system"] if usage else ["time", "date", "system"]
+    return ["time", "date", "weather", *(["tokens"] if usage else []), "system"]
 
 
 def current_page(available):
@@ -65,12 +69,43 @@ def compact(value):
     return str(value)
 
 
+def clock_markup(value, mode, compact=False):
+    accent = "#9b416b" if mode == "light" else "#ffd09c"
+    separator = f'<span foreground="{accent}">:</span>'
+    attributes = (
+        'weight="750" size="12288" letter_spacing="900"'
+        if compact else 'weight="750" letter_spacing="1600"'
+    )
+    return f'<span {attributes}>{separator.join(value.split(":"))}</span>'
+
+
+def cached_weather():
+    try:
+        return json.loads(WEATHER_CACHE.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
 def waybar_text(page, usage):
     now = datetime.now()
     if page == "time":
-        return "  " + now.strftime("%H:%M")
+        return clock_markup(now.strftime("%H:%M"), appearance.effective(), compact=True)
     if page == "date":
         return "  " + now.strftime("%m/%d")
+    if page == "weather":
+        saved = cached_weather()
+        if "data" in saved:
+            _, now, _ = saved["data"]
+            symbol, _ = weather_condition(now["weather_code"])
+            temperature = f"{now['temperature_2m']:.0f}°"
+        else:
+            symbol, temperature = "☁", MODE_NAMES["weather"]
+        icons = {
+            "\u2600": 0xf0599, "\u2601": 0xf0590, "\u224b": 0xf0591,
+            "\u2744": 0xf0598, "\u2602": 0xf0597, "\u03df": 0xf0593,
+        }
+        icon = chr(icons[symbol])
+        return f'<span font_family="Symbols Nerd Font Mono" rise="0">{icon}</span>  {temperature}'
     if page == "tokens":
         return "  " + "  ·  ".join(f"{short} {compact(counts['total_tokens'])}" for _, short, counts, _ in usage)
     cpu, ram, *_ = metrics()
@@ -142,9 +177,9 @@ def show_panel():
             self.head.set_size_request(107, 34)
             self.head.connect("clicked", lambda *_: self.close())
             self.frame.pack_start(self.head, False, False, 0)
-            self.content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            self.content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
             self.content.set_name("island-content")
-            self.content.set_size_request(350, -1)
+            self.content.set_size_request(476, 150)
             self.frame.pack_start(self.content, True, True, 0)
             self.refresh()
             self.expanded_size = self.measure()
@@ -157,7 +192,7 @@ def show_panel():
             GLib.timeout_add_seconds(1, self.refresh)
 
         def measure(self):
-            width = max(350, self.content.get_preferred_width()[1])
+            width = self.content.get_preferred_width()[1]
             height = self.content.get_preferred_height_for_width(width)[1]
             return width + 2, self.compact_size()[1] + height
 
@@ -237,6 +272,155 @@ def show_panel():
             bar = Gtk.ProgressBar(fraction=value / 100)
             box.pack_start(bar, False, False, 0)
 
+        def weather_view(self):
+            from weather_view import WeatherView
+
+            self.content.set_size_request(704, 150)
+            saved = cached_weather()
+            try:
+                city = CITY_FILE.read_text().strip()
+            except OSError:
+                city = ""
+            tools = Gtk.Box(spacing=12)
+            self.print_line(MODE_NAMES["weather"], "heading", tools)
+            entry = Gtk.Entry(text=city, placeholder_text="搜索城市", hexpand=True)
+            query = Gtk.Button(label="查询")
+            search = Gtk.ToggleButton(label="⌕")
+            search.set_tooltip_text("搜索城市")
+            search.get_style_context().add_class("weather-search-toggle")
+            controls = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_LEFT)
+            fields = Gtk.Box(spacing=8)
+            fields.pack_start(entry, True, True, 0)
+            fields.pack_start(query, False, False, 0)
+            controls.add(fields)
+            tools.pack_start(controls, True, True, 0)
+            tools.pack_end(search, False, False, 0)
+            search.connect("toggled", lambda button: controls.set_reveal_child(button.get_active()))
+            result = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+            result.connect("destroy", lambda *_: setattr(result, "discarded", True))
+            self.content.pack_start(tools, False, False, 0)
+            self.content.pack_start(result, False, False, 0)
+            result.get_style_context().add_class("island-weather")
+            message_label = Gtk.Label(xalign=0, no_show_all=True)
+            message_label.get_style_context().add_class("footnote")
+            self.content.pack_start(message_label, False, False, 0)
+            renderer = WeatherView(result)
+            displayed_data = None
+
+            def render(data, message=""):
+                nonlocal displayed_data
+                if data and data != displayed_data:
+                    renderer.render(*data)
+                    displayed_data = data
+                message_label.set_text(message)
+                message_label.set_visible(bool(message))
+
+            def finish(name, data, error):
+                if getattr(result, "discarded", False):
+                    return False
+                query.set_sensitive(True)
+                if data:
+                    try:
+                        CITY_FILE.parent.mkdir(parents=True, exist_ok=True)
+                        CITY_FILE.write_text(name + "\n")
+                        temporary = WEATHER_CACHE.with_suffix(".tmp")
+                        temporary.write_text(json.dumps({"city": name, "updated": time.time(), "data": data}))
+                        temporary.replace(WEATHER_CACHE)
+                    except OSError:
+                        pass
+                    search.set_active(False)
+                    refresh_waybar()
+                render(data or cached_weather().get("data"), error)
+                return False
+
+            def load(*_):
+                name = entry.get_text().strip()
+                if not name or not query.get_sensitive():
+                    return
+                query.set_sensitive(False)
+                render(cached_weather().get("data"), "正在更新…")
+
+                def fetch():
+                    try:
+                        data = weather(name)
+                    except (OSError, ValueError, KeyError):
+                        GLib.idle_add(finish, name, None, "天气查询失败，请检查城市名或稍后重试。")
+                    else:
+                        GLib.idle_add(finish, name, data, "")
+                Thread(target=fetch, daemon=True).start()
+
+            entry.connect("activate", load)
+            query.connect("clicked", load)
+            render(saved.get("data"), "" if city else "点击搜索按钮，添加城市。")
+            if city and (saved.get("city") != city or time.time() - saved.get("updated", 0) > 900):
+                load()
+
+        def calendar_view(self, today):
+            year, month = today.year, today.month
+            selected = today
+            dates = []
+            card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
+            card.get_style_context().add_class("month-calendar")
+            header = Gtk.Box(spacing=8)
+            title = Gtk.Label(hexpand=True)
+            title.get_style_context().add_class("month-title")
+            grid = Gtk.Grid(column_homogeneous=True, row_spacing=3)
+            week = "一二三四五六日"
+            for column, weekday in enumerate(week):
+                label = Gtk.Label(label=weekday)
+                label.get_style_context().add_class("weekday")
+                grid.attach(label, column, 0, 1, 1)
+            days = []
+
+            def draw():
+                nonlocal dates
+                title.set_text(f"{year} 年 {month} 月")
+                dates = list(calendar.Calendar().itermonthdates(year, month))
+                for index, button in enumerate(days):
+                    button.set_visible(index < len(dates))
+                    if index >= len(dates):
+                        continue
+                    day = dates[index]
+                    button.set_label(str(day.day))
+                    button.set_tooltip_text(day.isoformat())
+                    style = button.get_style_context()
+                    for name, active in (("outside-month", day.month != month),
+                                         ("today", day == today), ("selected", day == selected)):
+                        if active:
+                            style.add_class(name)
+                        else:
+                            style.remove_class(name)
+
+            def move(offset):
+                nonlocal year, month
+                year, index = divmod(year * 12 + month - 1 + offset, 12)
+                month = index + 1
+                draw()
+
+            def pick(_button, index):
+                nonlocal selected
+                selected = dates[index]
+                draw()
+
+            for offset, glyph, tooltip in ((-1, "‹", "上个月"), (1, "›", "下个月")):
+                button = Gtk.Button(label=glyph)
+                button.set_tooltip_text(tooltip)
+                button.get_style_context().add_class("month-navigation")
+                button.connect("clicked", lambda _button, step=offset: move(step))
+                header.pack_start(button, False, False, 0)
+                if offset == -1:
+                    header.pack_start(title, True, True, 0)
+            for index in range(42):
+                button = Gtk.Button(halign=Gtk.Align.CENTER, no_show_all=True)
+                button.get_style_context().add_class("calendar-day")
+                button.connect("clicked", pick, index)
+                grid.attach(button, index % 7, index // 7 + 1, 1, 1)
+                days.append(button)
+            card.pack_start(header, False, False, 0)
+            card.pack_start(grid, False, False, 0)
+            draw()
+            return card
+
         def refresh(self):
             if self.closing:
                 return False
@@ -256,12 +440,13 @@ def show_panel():
             elif page == "time":
                 payload = now.strftime("%H:%M:%S")
             else:
-                payload = now.date()
+                payload = now.date() if page == "date" else None
             caption = f" {payload[0]}%   󰍛 {payload[1]}%" if page == "system" else waybar_text(page, usage)
             self.head.set_label(caption)
+            self.head.get_child().set_use_markup(page in ("time", "weather"))
             if (page, payload, mode) == self.displayed:
                 return True
-            if page == "date" and self.displayed is not None and self.displayed[0] == "date":
+            if page in ("date", "weather") and self.displayed is not None and self.displayed[0] == page:
                 if self.displayed[1] == payload:
                     self.palette(mode)
                     self.displayed = (page, payload, mode)
@@ -270,19 +455,20 @@ def show_panel():
             self.palette(mode)
             for child in self.content.get_children():
                 child.destroy()
-            self.print_line(MODE_NAMES[page], "heading")
+            self.content.set_size_request(476, 150)
+            if page != "weather":
+                self.print_line(MODE_NAMES[page], "heading")
             weekdays = "一二三四五六日"
             if page in ("time", "date"):
                 long_date = f"{now.year} 年 {now.month} 月 {now.day} 日  周{weekdays[now.weekday()]}"
                 if page == "time":
-                    self.print_line(payload, "hero")
+                    self.print_line("", "hero").set_markup(clock_markup(payload, mode))
                     self.print_line(f"{long_date}  ·  {now.astimezone().tzname() or '本机时间'}", "detail")
                 else:
                     self.print_line(long_date, "hero date")
-                    grid = Gtk.Calendar()
-                    grid.select_month(now.month - 1, now.year)
-                    grid.select_day(now.day)
-                    self.content.pack_start(grid, False, False, 0)
+                    self.content.pack_start(self.calendar_view(now.date()), False, False, 0)
+            elif page == "weather":
+                self.weather_view()
             elif page == "tokens":
                 self.print_line("各工具最新本机会话累计", "footnote")
                 for name, _, counts, timestamp in payload:

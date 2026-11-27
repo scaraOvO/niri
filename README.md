@@ -1,6 +1,6 @@
 # Dusk · Niri 桌面配置
 
-包含 Niri、Waybar、控制中心、SwayNC、Rofi、Kitty、Neovim、Zsh + Zim、tmux、Fastfetch 和 Fcitx5 + Rime。浅色和深色配色可以在控制中心切换。天气、壁纸、媒体和系统状态都可在顶栏访问。
+包含 Niri、Waybar、控制中心、SwayNC、Rofi、Kitty、Neovim、Zsh + Zim、tmux、Fastfetch 和 Fcitx5 + Rime。浅色、深色和高透明主题可以在控制中心切换。天气、壁纸、媒体和系统状态都可在顶栏访问。
 
 ## 1. 按发行版安装
 
@@ -105,7 +105,7 @@ cp -a .config/. "$HOME/.config/"
 printf '配置备份位于 %s\n' "$backup"
 ```
 
-从登录管理器选择 **Niri**，或在 TTY 手动运行 `niri-session`。在 **Niri 会话里的终端**启用用户服务：
+从登录管理器选择 **Niri**，或在 TTY 手动运行 `niri-session`。在 **Niri 会话里的普通用户终端**启用用户服务。先退出 root shell，使用登录桌面的账号运行以下命令。
 
 ```sh
 systemctl --user daemon-reload
@@ -149,10 +149,10 @@ ZIM_HOME="$HOME/.zim" zsh -c 'source "$ZIM_HOME/zimfw.zsh" install'
 | `Super+D` | 打开 Rofi，按 `Esc` 关闭 |
 | `Super+N` | 打开通知中心 |
 | `Super+Shift+N` | 切换勿扰 |
-| Waybar 最右侧下拉箭头 | 打开控制中心，调整外观、音量、壁纸和天气 |
-| Waybar 中间小岛 | 滚轮切换信息，点击展开详情 |
+| Waybar 最右侧下拉箭头 | 打开控制中心，调整外观、媒体与设备、网络、蓝牙和壁纸 |
+| Waybar 中间小岛 | 滚轮切换时间、日期、天气、Token 用量和系统占用，点击展开详情 |
 
-自动主题按本机时间在 **07:00** 切到浅色、**19:00** 切到深色。小岛读取本机 Codex、Claude Code 与 DeepSeek Harness 会话日志，没有可读记录时跳过 Token 页。天气使用 Open-Meteo，地图使用 OpenStreetMap。最近查询的城市、已选壁纸和地图缓存保存在本机。 [Open-Meteo](https://open-meteo.com/) · [OpenStreetMap](https://www.openstreetmap.org/copyright)
+自动主题按本机时间在 **07:00** 切到浅色、**19:00** 切到深色。小岛读取本机 Codex、Claude Code 与 DeepSeek Harness 会话日志，没有可读记录时跳过 Token 页。小岛天气使用 Open-Meteo，展开后可查看五天预报、地图、日出日落和气象指标。地图使用 OpenStreetMap。最近查询的城市、已选壁纸和地图缓存保存在本机。 [Open-Meteo](https://open-meteo.com/) · [OpenStreetMap](https://www.openstreetmap.org/copyright)
 
 ## 5. 壁纸与配色
 
@@ -160,6 +160,60 @@ ZIM_HOME="$HOME/.zim" zsh -c 'source "$ZIM_HOME/zimfw.zsh" install'
 
 可将自己的图片复制到图片目录下的 `wallpaper` 子目录（通常是 `~/Pictures/wallpaper`）。
 
-在 **控制中心 → 外观**，可独立选择「壁纸取色」或「Dusk 原色」，并调节色彩强度。「随壁纸明暗」根据壁纸亮度选择浅色或深色，「定时」继续按 07:00／19:00 切换。通过控制中心更换图片时配色即时更新。
+在 **控制中心 → 外观**，可独立选择「壁纸取色」或「Dusk 原色」，并调节色彩强度。「随壁纸明暗」根据壁纸亮度选择浅色或深色，「定时」继续按 07:00／19:00 切换。「高透明」使用浅色主题的深色文字，并降低面板背景的不透明度。通过控制中心更换图片时配色即时更新。
 
 壁纸生成的配色、本机图库和个人选择不随仓库分发。Niri 的 `wallpaper-palette.kdl` 由外观设置在本机生成。
+
+## 6. 编译 Rofi 弹入动画和分离式磨砂
+
+系统自带的 Rofi 可直接使用。启用弹入动画，以及只对搜索框和结果列表做模糊，需要编译本节的 Wayland 版本。补丁和协议定义都在仓库中。 [Rofi 源码补丁](.config/rofi/wayland-opening.patch) · [Wayland 背景效果协议](.config/rofi/ext-background-effect-v1.xml)
+
+按发行版安装构建依赖。
+
+**Arch Linux**
+
+```sh
+sudo pacman -S --needed gcc meson ninja pkgconf flex bison curl git \
+  glib2-devel cairo pango gdk-pixbuf2 libxkbcommon xkeyboard-config \
+  wayland wayland-protocols
+```
+
+**Debian / Ubuntu**
+
+```sh
+sudo apt install build-essential meson ninja-build pkg-config flex bison curl git \
+  libglib2.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf-2.0-dev \
+  libxkbcommon-dev xkb-data libwayland-dev libwayland-bin wayland-protocols
+```
+
+**Fedora**
+
+```sh
+sudo dnf install gcc meson ninja-build pkgconf-pkg-config flex bison curl git \
+  glib2-devel cairo-devel pango-devel gdk-pixbuf2-devel libxkbcommon-devel \
+  xkeyboard-config wayland-devel wayland-protocols-devel
+```
+
+在本仓库根目录，用普通用户运行下面的命令。构建使用带有子项目源码的官方发行压缩包。 [Rofi 2.1.1 发行页](https://github.com/davatorium/rofi/releases/tag/2.1.1)
+
+```sh
+(
+  set -eu
+  repo=$(pwd -P)
+  build_dir=$(mktemp -d)
+  cd "$build_dir"
+  curl -fL https://github.com/davatorium/rofi/releases/download/2.1.1/rofi-2.1.1.tar.gz \
+    -o rofi-2.1.1.tar.gz
+  printf '%s\n' '5fe33afce841994eebfc0302ba869e7b9c035b97c26858fb0142a54a1627d3e4  rofi-2.1.1.tar.gz' | sha256sum -c -
+  tar -xzf rofi-2.1.1.tar.gz
+  cd rofi-2.1.1
+  cp "$repo/.config/rofi/ext-background-effect-v1.xml" protocols/
+  git apply "$repo/.config/rofi/wayland-opening.patch"
+  meson setup build -Dxcb=disabled -Dwayland=enabled -Dcheck=disabled
+  meson compile -C build
+  meson test -C build --no-rebuild
+  install -Dm755 build/rofi "$HOME/.local/libexec/dusk-rofi/rofi"
+)
+```
+
+按第 2 节复制配置后，`Super+D` 会优先运行用户目录里的构建，并保留系统 Rofi 作为备用。模糊范围由 Niri 的 Wayland 背景效果协议控制。弹入动画、两块独立的模糊区域和编译流程已在 Arch Linux 验证。

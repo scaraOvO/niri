@@ -136,7 +136,6 @@ PANEL = """
 #dusk-control button.primary-action, #dusk-control button.play,
 #dusk-control button.weather-search-toggle:checked { background: @wp_accent; color: @wp_on_accent; }
 #dusk-control button.primary-action:hover, #dusk-control button.play:hover { background: @wp_hover; }
-#dusk-control .slider-card { background-color: alpha(@wp_panel, .80); }
 #dusk-control .slider-label { color: @wp_ink; }
 #dusk-control .slider-value { color: @wp_secondary; background-color: alpha(@wp_surface, .70); }
 #dusk-control .weather-hero, #dusk-control .forecast, #dusk-control .weather-metric,
@@ -210,3 +209,38 @@ def files(config, p):
         "    }\n}\n"
     )
     return result
+
+
+def glass_surfaces(config, palette, files):
+    surface = palette.get("surface", "#fff7ed")
+    edge = palette.get("edge", "#ad96ad")
+    bar = rgba(surface, .67)
+    panel = rgba(surface, .54)
+    island = rgba(surface, .64)
+    center = rgba(surface, .64)
+    outline = rgba(edge, .34)
+
+    files[config / "waybar/wallpaper-palette.css"] += f"""
+#workspaces, #window, #custom-island, #network, #pulseaudio,
+#custom-notifications, #tray, #custom-control-center, #media:not(.empty) {{
+  background-color: {bar}; border-color: {outline};
+}}
+window#waybar.empty #window {{ background: transparent; border-color: transparent; }}
+"""
+    files[config / "waybar/control-center/wallpaper-palette.css"] += f"""
+#dusk-control #frame {{ background: {panel}; border-color: {outline}; }}
+"""
+    files[config / "waybar/control-center/island-wallpaper.css"] += f"""
+#dusk-island.light #island-frame {{ background: {island}; border-color: {outline}; }}
+"""
+    files[config / "swaync/wallpaper-palette.css"] += f"""
+.control-center {{ background: {center}; border-color: {outline}; }}
+.control-center .control-center-list .notification-row .notification-background .notification {{
+  background: {rgba(surface, .78)};
+}}
+.control-center .control-center-list .notification-group.collapsed .notification-row:not(:last-child) .notification-background .notification {{
+  background: transparent;
+}}
+"""
+    files[config / "rofi/wallpaper-palette.rasi"] += f"\n* {{ surface: {rgba(surface, .68)}; }}\n"
+    files[config / "kitty/wallpaper-palette.conf"] += "\nbackground_opacity 0.66\n"

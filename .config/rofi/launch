@@ -1,0 +1,6 @@
+#!/bin/sh
+animated="$HOME/.local/libexec/dusk-rofi/rofi"
+if [ -n "$WAYLAND_DISPLAY" ] && [ -x "$animated" ]; then
+    DUSK_ROFI_ANIMATE=1 DUSK_ROFI_SPLIT=1 exec "$animated" -theme-str "@import \"$HOME/.config/rofi/split-layout.rasi\"" "$@"
+fi
+exec rofi "$@"
