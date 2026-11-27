@@ -153,3 +153,24 @@ ZIM_HOME="$HOME/.zim" zsh -c 'source "$ZIM_HOME/zimfw.zsh" install'
 | Waybar 中间小岛 | 滚轮切换信息，点击展开详情 |
 
 自动主题按本机时间在 **07:00** 切到浅色、**19:00** 切到深色。小岛读取本机 Codex、Claude Code 与 DeepSeek Harness 会话日志，没有可读记录时跳过 Token 页。天气使用 Open-Meteo，地图使用 OpenStreetMap。最近查询的城市、已选壁纸和地图缓存保存在本机。 [Open-Meteo](https://open-meteo.com/) · [OpenStreetMap](https://www.openstreetmap.org/copyright)
+
+## 5. 壁纸与配色
+
+仓库自带 Arch 默认壁纸。通过 **控制中心 → 壁纸** 可以一键恢复系统默认，也能浏览图片目录下的 `wallpaper` 子目录。把图片放进去并点「重新扫描」后，点击缩略图即可切换。
+
+想把仓库里的咖啡壁纸放进图库，在仓库根目录运行：
+
+```sh
+pictures="$HOME/Pictures"
+if command -v xdg-user-dir >/dev/null; then
+  pictures=$(xdg-user-dir PICTURES)
+fi
+coffee="$pictures/wallpaper/wanderer_coffee.jpg"
+if [ ! -e "$coffee" ]; then
+  install -Dm644 .config/niri/wanderer_coffee.jpg "$coffee"
+fi
+```
+
+在 **控制中心 → 外观**，可独立选择「壁纸取色」或「Dusk 原色」，并调节色彩强度。「随壁纸明暗」根据壁纸亮度选择浅色或深色，「定时」继续按 07:00／19:00 切换。通过控制中心更换图片时配色即时更新。
+
+壁纸生成的配色、本机图库和个人选择不随仓库分发。仓库里的 `wallpaper-palette` 文件是初始占位，启用取色后会由外观设置生成实际配色。

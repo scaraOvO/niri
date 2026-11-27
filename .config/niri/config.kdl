@@ -367,3 +367,5 @@ layer-rule {
         noise 0.015
     }
 }
+
+include "wallpaper-palette.kdl"

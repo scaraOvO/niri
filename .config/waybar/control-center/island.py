@@ -130,9 +130,9 @@ def show_panel():
             GtkLayerShell.set_keyboard_mode(self.panel, GtkLayerShell.KeyboardMode.ON_DEMAND)
             GtkLayerShell.set_exclusive_zone(self.panel, -1)
 
-            css = Gtk.CssProvider()
-            css.load_from_path(str(Path(__file__).with_name("island.css")))
-            Gtk.StyleContext.add_provider_for_screen(self.panel.get_screen(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+            self.css = Gtk.CssProvider()
+            self.css_revision = None
+            Gtk.StyleContext.add_provider_for_screen(self.panel.get_screen(), self.css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
             self.frame = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             self.frame.set_name("island-frame")
             self.frame.set_size_request(109, 36)
@@ -245,6 +245,10 @@ def show_panel():
             page = current_page(available)
             now = datetime.now()
             mode = appearance.effective()
+            revision = Path(__file__).with_name("island-wallpaper.css").stat().st_mtime_ns
+            if revision != self.css_revision:
+                self.css.load_from_path(str(Path(__file__).with_name("island.css")))
+                self.css_revision = revision
             if page == "system":
                 payload = metrics()
             elif page == "tokens":

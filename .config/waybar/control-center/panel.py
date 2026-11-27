@@ -15,7 +15,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("GtkLayerShell", "0.1")
-from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, GtkLayerShell
+from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Gtk, GtkLayerShell, Pango
 
 HERE = Path(__file__).resolve().parent
 CITY_FILE = Path(GLib.get_user_state_dir()) / "dusk-control" / "weather-city"
@@ -184,7 +184,8 @@ class ExpressiveTrack(Gtk.Overlay):
         x = 10 + max(0, width-20) * self.position
         alpha = 1 if self.is_sensitive() else .40
         light = not self.get_settings().get_property("gtk-application-prefer-dark-theme")
-        accent = tuple(component * .69 for component in self.color) if light else self.color
+        dynamic = getattr(self, "wallpaper_color", None)
+        accent = dynamic or (tuple(component * .69 for component in self.color) if light else self.color)
         handle = 2.6 + self.emphasis * 1.4
         height = 20 + self.emphasis * 2
         gap = handle + 6
@@ -366,6 +367,8 @@ class ControlCenter(Gtk.Application):
             style.add_class("selected") if name == ident else style.remove_class("selected")
         if ident == "weather":
             self.restore_weather()
+        if ident == "wallpaper":
+            self.refresh_gallery()
         if hasattr(self, "track"):
             self.refresh()
 
@@ -421,6 +424,9 @@ class ControlCenter(Gtk.Application):
         control = ExpressiveTrack(title, colors[key])
         handler = control.scale.connect("value-changed", self.change_slider, key)
         self.sliders[key] = (control, handler, value)
+        palette = appearance.current_palette()
+        accent = palette.get("border" if key == "output" else "secondary" if key == "input" else "edge")
+        control.wallpaper_color = tuple(int(accent[i:i+2],16)/255 for i in (1,3,5)) if accent else None
         self.put(card, header, control)
         self.put(page, card)
 
@@ -499,12 +505,25 @@ class ControlCenter(Gtk.Application):
         for key, icon, title in (
             ("light", "\uf185", "浅色"),
             ("dark", "\uf186", "深色"),
-            ("auto", "\uf017", "自动"),
+            ("auto", "\uf017", "定时"),
+            ("wallpaper", "\uf03e", "随壁纸明暗"),
         ):
             widget = button(f"{icon}  {title}", lambda mode=key: self.set_appearance(mode))
             self.appearance_buttons[key] = widget
+        self.palette_buttons = {
+            key: button(title, lambda value=key: self.change_palette(source=value))
+            for key, title in (("wallpaper", "壁纸取色"), ("dusk", "Dusk 原色"))
+        }
+        self.strength_buttons = {
+            key: button(title, lambda value=key: self.change_palette(strength=value))
+            for key, title in (("soft", "柔和"), ("balanced", "标准"), ("vivid", "鲜明"))
+        }
+        self.palette_preview = Gtk.DrawingArea()
+        self.palette_preview.set_size_request(150, 30)
+        self.palette_preview.connect("draw", self.draw_palette)
         self.put(page, row(*self.appearance_buttons.values()), self.appearance_status,
-                 label("自动模式按本机时间切换：07:00 使用浅色，19:00 使用深色。", "muted"))
+                 label("定时模式在 07:00／19:00 切换，随壁纸明暗模式按画面亮度选择。", "muted"),
+                 row(*self.palette_buttons.values()), row(*self.strength_buttons.values(), self.palette_preview))
         self.update_appearance_controls()
         return page
 
@@ -515,13 +534,36 @@ class ControlCenter(Gtk.Application):
         except OSError:
             self.appearance_status.set_text("主题切换失败。")
 
+    def change_palette(self, **settings):
+        try:
+            appearance.apply(**settings)
+            self.reload_appearance()
+        except OSError:
+            self.appearance_status.set_text("主题配色更新失败。")
+
+    def draw_palette(self, _widget, cr):
+        palette = appearance.current_palette()
+        colors = [palette.get(name, fallback) for name, fallback in (
+            ("surface", "#51435e"), ("accent", "#efbc99"), ("secondary", "#c79fcb"))]
+        for index, color in enumerate(colors):
+            channels = [int(color[i:i+2], 16)/255 for i in (1,3,5)]
+            cr.set_source_rgb(*channels)
+            cr.arc(19+37*index, 15, 11, 0, 2*pi)
+            cr.fill()
+        return False
+
     def reload_appearance(self):
         active = appearance.effective()
-        if active != self.active_theme:
+        revision = (HERE / "wallpaper-palette.css").stat().st_mtime_ns
+        if (active, revision) != (self.active_theme, getattr(self, "palette_revision", None)):
             self.css.load_from_path(str(HERE / "style.css"))
             self.active_theme = active
+            self.palette_revision = revision
             self.window.get_settings().set_property("gtk-application-prefer-dark-theme", active == "dark")
-            for control, _, _ in getattr(self, "sliders", {}).values():
+            palette = appearance.current_palette()
+            for key, (control, _, _) in getattr(self, "sliders", {}).items():
+                value = palette.get("border" if key == "output" else "secondary" if key == "input" else "edge")
+                control.wallpaper_color = tuple(int(value[i:i+2],16)/255 for i in (1,3,5)) if value else None
                 control.canvas.queue_draw()
         if hasattr(self, "appearance_buttons"):
             self.update_appearance_controls()
@@ -531,17 +573,119 @@ class ControlCenter(Gtk.Application):
         for key, widget in self.appearance_buttons.items():
             css = widget.get_style_context()
             css.add_class("primary-action") if key == mode else css.remove_class("primary-action")
+        source, strength = appearance.palette_options()
+        for buttons, current in ((self.palette_buttons, source), (self.strength_buttons, strength)):
+            for key, button in buttons.items():
+                css = button.get_style_context()
+                css.add_class("primary-action") if key == current else css.remove_class("primary-action")
+                if buttons is self.strength_buttons:
+                    button.set_sensitive(source == "wallpaper")
+        self.palette_preview.queue_draw()
         names = {"dark": "深色", "light": "浅色"}
-        self.appearance_status.set_text("当前使用" + names[self.active_theme] +
-                                        (" · 自动切换" if mode == "auto" else ""))
+        detail = {"auto":" · 定时", "wallpaper":" · 随壁纸", "dark":"", "light":""}
+        self.appearance_status.set_text("当前使用" + names[self.active_theme] + detail[mode] +
+                                        (" · 壁纸取色" if source == "wallpaper" else " · Dusk 原色"))
 
     def wallpaper_page(self):
-        page = self.page("选择本地图片，设置会在重新登录后保留。")
-        self.wallpaper_status = label()
-        self.put(page, row(button("选择图片", self.choose_wallpaper),
-                           button("恢复咖啡壁纸", lambda: self.apply_wallpaper(None))),
-                 self.wallpaper_status)
+        page = self.page()
+        path = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)
+        self.gallery_path = Path(path or (Path.home() / "Pictures")) / "wallpaper"
+        self.wallpaper_state = appearance.STATE / "wallpaper-selection"
+        self.wallpaper_status = label("", "muted")
+        self.gallery = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, column_spacing=12, row_spacing=12)
+        self.gallery.set_homogeneous(True)
+        self.gallery.set_min_children_per_line(2)
+        self.gallery.set_max_children_per_line(4)
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_min_content_height(330)
+        scroll.add(self.gallery)
+        self.put(page, row(
+            button("选择图片", self.choose_wallpaper),
+            button("重新扫描", self.refresh_gallery),
+            button("恢复系统默认", lambda: self.apply_wallpaper(None)),
+        ), label(str(self.gallery_path), "muted"), self.wallpaper_status)
+        page.pack_start(scroll, True, True, 0)
+        self.gallery_index = {}
+        self.gallery_stamp = None
+        self.gallery_generation = 0
         return page
+
+    def refresh_gallery(self):
+        self.gallery_path.mkdir(parents=True, exist_ok=True)
+        extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".avif", ".tiff"}
+        items = sorted((path for path in self.gallery_path.iterdir()
+                        if path.is_file() and path.suffix.casefold() in extensions),
+                       key=lambda path: (path.name.casefold(), path.name))
+        stamp = []
+        for path in items:
+            try:
+                stamp.append((path, path.stat().st_mtime_ns))
+            except OSError:
+                continue
+        if stamp == self.gallery_stamp:
+            self.highlight_wallpaper()
+            return
+        self.gallery_stamp = stamp
+        self.gallery_generation += 1
+        self.gallery_index.clear()
+        for widget in self.gallery.get_children():
+            widget.destroy()
+        if not stamp:
+            self.gallery.add(label("壁纸目录中没有图片。", "muted"))
+            self.gallery.show_all()
+            return
+
+        pending = iter(path for path, _ in stamp)
+        generation = self.gallery_generation
+        def load_batch():
+            if self.window is None or generation != self.gallery_generation:
+                return False
+            for _ in range(6):
+                path = next(pending, None)
+                if path is None:
+                    self.highlight_wallpaper()
+                    return False
+                try:
+                    texture = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(path), 148, 87, True)
+                except GLib.Error:
+                    continue
+                card = Gtk.Button()
+                card.get_style_context().add_class("wallpaper-thumb")
+                card.set_tooltip_text(path.name)
+                card.connect("clicked", lambda _button, value=path: self.apply_wallpaper(str(value)))
+                preview = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+                image = Gtk.Image.new_from_pixbuf(texture)
+                image.set_size_request(148, 87)
+                name = label("咖啡壁纸" if path.name == "wanderer_coffee.jpg" else path.stem)
+                name.set_ellipsize(Pango.EllipsizeMode.END)
+                name.set_max_width_chars(16)
+                name.set_xalign(.5)
+                self.put(preview, image, name)
+                card.add(preview)
+                self.gallery_index[str(path)] = card
+                self.gallery.add(card)
+            self.gallery.show_all()
+            self.highlight_wallpaper()
+            return True
+        GLib.idle_add(load_batch)
+
+    def highlight_wallpaper(self):
+        try:
+            active = self.wallpaper_state.read_text().strip()
+        except OSError:
+            active = ""
+        default_wall = appearance.CONFIG / "niri"
+        if not (HERE / "wallpaper.png").exists() and not any(
+            (default_wall / f"system-wallpaper.{extension}").exists() for extension in ("png", "jpg")
+        ):
+            active = str(self.gallery_path / "wanderer_coffee.jpg")
+        for filename, card in self.gallery_index.items():
+            style = card.get_style_context()
+            if filename == active:
+                style.add_class("selected")
+            else:
+                style.remove_class("selected")
 
     def command(self, *args):
         try:
@@ -908,7 +1052,21 @@ class ControlCenter(Gtk.Application):
             except ProcessLookupError:
                 pass
         old.unlink(missing_ok=True)
+        try:
+            self.wallpaper_state.parent.mkdir(parents=True, exist_ok=True)
+            if filename:
+                self.wallpaper_state.write_text(str(Path(filename).resolve()) + "\n")
+            else:
+                self.wallpaper_state.unlink(missing_ok=True)
+        except OSError:
+            pass
+        self.highlight_wallpaper()
         self.wallpaper_status.set_text("壁纸已更新。")
+        try:
+            appearance.apply()
+            self.reload_appearance()
+        except OSError:
+            self.wallpaper_status.set_text("壁纸已更新，主题配色未能同步。")
 
     def refresh(self):
         if self.window is None:

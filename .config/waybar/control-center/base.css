@@ -222,3 +222,13 @@
   font-size: 20px;
   color: #ffd296;
 }
+
+/* 壁纸缩略图与当前选中状态。 */
+#dusk-control button.wallpaper-thumb {
+  padding: 6px;
+  border-radius: 13px;
+}
+#dusk-control button.wallpaper-thumb.selected {
+  border-color: #efbc99;
+  box-shadow: inset 0 0 0 1px #efbc99;
+}

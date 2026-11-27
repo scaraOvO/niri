@@ -10,3 +10,5 @@ configuration {
     drun-display-format: "{name}[<span size='small' alpha='78%'>&#10;{comment}</span>]";
 }
 @theme "appearance.rasi"
+
+@import "wallpaper-palette.rasi"
