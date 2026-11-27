@@ -1,3 +1,5 @@
+@define-color popup_surface #302740;
+
 * {
   font-family: "Adwaita Sans", sans-serif;
   font-size: 15px;
@@ -19,7 +21,12 @@ blankwindow.open .control-center {
   border-radius: 20px;
   padding: 15px;
 }
-.floating-notifications { background: transparent; margin: 48px 8px 0 0; }
+.floating-notifications { background: transparent; margin: 49px 0 0; }
+.floating-notifications > scrolledwindow {
+  background: alpha(@popup_surface, 0.57);
+  border-radius: 14px;
+  backdrop-filter: blur(24px);
+}
 .notification-row .notification-background { padding: 6px 9px; }
 .notification-row .notification-background .notification {
   background: rgba(48, 39, 64, 0.90);
@@ -64,15 +71,29 @@ blankwindow.open .control-center {
 }
 .widget-dnd switch:checked { background: #efbc99; }
 
-.floating-notifications .notification-row .notification-background .notification {
-  min-width: 480px;
-  min-height: 88px;
-  border-radius: 18px;
+.floating-notifications .notification-row .notification-background { padding: 0; }
+.floating-notifications .notification-row .notification-background .notification,
+.floating-notifications .notification-row .notification-background .notification.normal,
+.floating-notifications .notification-row .notification-background .notification.low,
+.floating-notifications .notification-row .notification-background .notification.critical {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  min-height: 42px;
+  border-radius: 14px;
+}
+.floating-notifications .notification-row .notification-background .notification .notification-content .image {
+  -gtk-icon-size: 24px;
 }
 .floating-notifications .notification-row .notification-background .notification .notification-default-action {
-  min-height: 64px;
-  padding: 10px 16px;
-  border-radius: 17px;
+  padding: 8px 11px;
+  border-radius: 14px;
+}
+.floating-notifications .notification-row .notification-background .notification .notification-default-action .notification-content .summary {
+  font-size: 15px;
+}
+.floating-notifications .notification-row .notification-background .notification .notification-default-action .notification-content .body {
+  font-size: 14px;
 }
 .notification-row .notification-background .notification .notification-default-action .notification-content .summary {
   font-size: 17px;

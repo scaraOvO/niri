@@ -1,3 +1,5 @@
+@define-color popup_surface #fff9f3;
+
 .control-center {
   background: linear-gradient(150deg, rgba(255, 247, 237, 0.90), rgba(244, 231, 244, 0.89));
   color: #3b2d45;

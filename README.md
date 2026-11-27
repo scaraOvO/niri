@@ -217,3 +217,49 @@ sudo dnf install gcc meson ninja-build pkgconf-pkg-config flex bison curl git \
 ```
 
 按第 2 节复制配置后，`Super+D` 会优先运行用户目录里的构建，并保留系统 Rofi 作为备用。模糊范围由 Niri 的 Wayland 背景效果协议控制。弹入动画、两块独立的模糊区域和编译流程已在 Arch Linux 验证。
+
+## 7. 编译 SwayNC 弹窗文字居中补丁
+
+原版 SwayNC 可使用本仓库的通知样式。小岛正下方的弹窗采用 248 px 宽的圆角底板。背景模糊通过 GTK 的 `backdrop-filter` 和 Niri 的 Wayland 背景效果协议实现，已在 GTK 4.24.2 上验证。
+
+弹窗的标题和正文在横向、竖向同时居中，需要应用本仓库的补丁，通知中心列表沿用原版布局。 [SwayNC 源码补丁](.config/swaync/popup-center.patch)
+
+Arch Linux 的构建依赖如下。
+
+```sh
+sudo pacman -S --needed gcc meson ninja pkgconf vala sassc blueprint-compiler \
+  gtk4 gtk4-layer-shell libadwaita granite7 libgee json-glib libpulse \
+  glib2-devel wayland curl git
+```
+
+Debian、Ubuntu 或 Fedora 使用同一套构建命令。先安装对应的开发包，使 `pkg-config --modversion gtk4 gtk4-wayland gtk4-layer-shell-0 libadwaita-1 granite-7 gee-0.8 json-glib-1.0 wayland-client libpulse` 能返回版本，并准备 `valac`、`sassc`、`blueprint-compiler`、Meson、Ninja 和 C 编译器。发行版自带组件过旧时可继续使用原版通知服务。
+
+从仓库根目录运行以下命令，将构建安装到当前用户的目录。 [SwayNC 0.12.6 发行页](https://github.com/ErikReider/SwayNotificationCenter/releases/tag/v0.12.6)
+
+```sh
+(
+  set -eu
+  repo=$(pwd -P)
+  build_dir=$(mktemp -d)
+  cd "$build_dir"
+  curl -fL https://codeload.github.com/ErikReider/SwayNotificationCenter/tar.gz/refs/tags/v0.12.6 \
+    -o swaync-0.12.6.tar.gz
+  printf '%s\n' '0c844eb5c9524f924495bd4145e5db575096de36f3ec87fb37e4c1ed6eacb897  swaync-0.12.6.tar.gz' | sha256sum -c -
+  tar -xzf swaync-0.12.6.tar.gz
+  cd SwayNotificationCenter-0.12.6
+  git apply "$repo/.config/swaync/popup-center.patch"
+  meson setup build --sysconfdir=/etc -Dman-pages=false
+  meson compile -C build
+  install -Dm755 build/src/swaync "$HOME/.local/libexec/dusk-swaync/swaync"
+)
+```
+
+按第 2 节复制配置后，在 Niri 的普通用户终端运行以下命令。随仓库提供的 systemd 覆盖配置会优先使用本机构建，并以发行版的 SwayNC 作为备用。
+
+```sh
+systemctl --user daemon-reload
+systemctl --user restart swaync.service
+notify-send '通知预览' '标题和正文均居中'
+```
+
+若通过 Niri 直接启动 SwayNC，可使用 `spawn-at-startup "sh" "-c" "exec \"$HOME/.config/swaync/launch\""` 调用同一个启动脚本。

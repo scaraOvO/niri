@@ -1,0 +1,6 @@
+#!/bin/sh
+local_swaync="$HOME/.local/libexec/dusk-swaync/swaync"
+if [ -x "$local_swaync" ]; then
+    exec "$local_swaync" "$@"
+fi
+exec /usr/bin/swaync "$@"

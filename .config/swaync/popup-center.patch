@@ -1,0 +1,31 @@
+--- a/src/notification/notification.vala
++++ b/src/notification/notification.vala
+@@ -131,6 +131,28 @@
+         }
+ 
+         construct {
++            if (notification_type == NotificationType.FLOATING) {
++                summary.set_xalign (0.5f);
++                summary.set_justify (Gtk.Justification.CENTER);
++                body.set_xalign (0.5f);
++                body.set_justify (Gtk.Justification.CENTER);
++                time.set_visible (false);
++
++                // Balance the leading icon so the text is centered in the card.
++                var icons = (Gtk.Overlay) img.get_parent ();
++                var content_row = (Gtk.Box) icons.get_parent ();
++                var spacer = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
++                var columns = new Gtk.SizeGroup (Gtk.SizeGroupMode.HORIZONTAL);
++                columns.add_widget (icons);
++                columns.add_widget (spacer);
++                content_row.append (spacer);
++
++                default_action.set_vexpand (true);
++                var content = content_row.get_parent ();
++                content.set_vexpand (true);
++                content.set_valign (Gtk.Align.CENTER);
++            }
++
+             try {
+                 code_regex = new Regex ("(?<= |^)(\\d{3}(-| )\\d{3}|\\d{4,8})(?= |$|\\.|,)",
+                                         RegexCompileFlags.MULTILINE);

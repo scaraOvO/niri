@@ -28,7 +28,7 @@ overview {
 // 窗口布局、焦点边框与阴影。
 layout {
     gaps 14
-    background-color "#211e30"
+    background-color "transparent"
 
     center-focused-column "never"
 
@@ -306,6 +306,18 @@ window-rule {
 
 // 加载桌面壁纸。
 spawn-at-startup "sh" "-c" "exec \"$HOME/.config/waybar/control-center/wallpaper\""
+
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
+}
+
+layer-rule {
+    match namespace="^swaync-notification-window$"
+    background-effect {
+        xray false
+    }
+}
 
 layer-rule {
     match namespace="^swaync-control-center$"

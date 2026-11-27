@@ -143,6 +143,7 @@ PANEL = """
 #dusk-control .weather-map button label { color: @wp_secondary; }
 """
 SWAYNC = """
+@define-color popup_surface @wp_surface;
 .control-center { background: alpha(@wp_surface, .93); color: @wp_ink; border-color: @wp_edge; }
 .notification-row .notification-background .notification,
 .control-center .control-center-list .notification-row .notification-background .notification {
