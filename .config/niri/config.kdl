@@ -368,4 +368,4 @@ layer-rule {
     }
 }
 
-include "wallpaper-palette.kdl"
+include "wallpaper-palette.kdl" optional=true
