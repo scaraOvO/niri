@@ -1,9 +1,12 @@
 configuration {
     modi: "drun,run";
     show-icons: true;
+    click-to-exit: false;
     icon-theme: "Adwaita";
-    display-drun: "Apps";
-    display-run: "Run";
-    drun-display-format: "{name}";
+    display-drun: "";
+    display-run: "";
+    drun-match-fields: "name,generic,exec,categories,keywords,comment";
+    eh: 2;
+    drun-display-format: "{name}[<span size='small' alpha='78%'>&#10;{comment}</span>]";
 }
 @theme "appearance.rasi"

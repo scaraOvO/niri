@@ -350,3 +350,20 @@ layer-rule {
         xray false
     }
 }
+
+// 启动中文输入法，并为 XWayland 应用提供 XIM。
+environment {
+    XMODIFIERS "@im=fcitx"
+}
+spawn-at-startup "fcitx5" "-d"
+
+layer-rule {
+    match namespace="^rofi$"
+    geometry-corner-radius 22
+
+    background-effect {
+        blur true
+        xray false
+        noise 0.015
+    }
+}

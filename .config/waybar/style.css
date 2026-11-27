@@ -1,7 +1,10 @@
 @import url("base.css");
 @import url("appearance.css");
-#network, #pulseaudio, #custom-notifications, #tray, #custom-control-center {
-  box-shadow: none;
+/* 顶边高光与向下的投影。 */
+#workspaces, #window, #custom-island, #network, #pulseaudio,
+#custom-notifications, #tray, #custom-control-center, #media:not(.empty) {
+  box-shadow: inset 0 1px 0 @bar_edge,
+              0 3px 6px -2px @bar_lift;
 }
 
 /* 展开时用原位浮层替代顶栏里的紧凑小岛。 */

@@ -1,9 +1,11 @@
+@define-color bar_lift rgba(71, 49, 48, 0.21);
+@define-color bar_edge rgba(255, 255, 255, 0.73);
+
 window#waybar { color: #3d3047; }
 #workspaces, #window, #custom-island, #network, #pulseaudio,
 #custom-notifications, #tray, #custom-control-center, #media:not(.empty) {
-  background: rgba(255, 245, 239, 0.91);
+  background: rgba(255, 247, 239, 0.96);
   border-color: rgba(130, 102, 136, 0.30);
-  box-shadow: 0 1px 3px rgba(54, 42, 59, 0.22);
 }
 #workspaces button { color: #53405d; }
 #workspaces button:hover { background: #eee0ed; }

@@ -1,35 +1,155 @@
-# Niri 桌面配置
+# Dusk · Niri 桌面配置
 
-Arch Linux 上的 Dusk 桌面配置，包含 Niri、Waybar、SwayNotificationCenter、Kitty、Rofi、Neovim、tmux、Fastfetch 和 Zsh + Zim。
+包含 Niri、Waybar、控制中心、SwayNC、Rofi、Kitty、Neovim、Zsh + Zim、tmux、Fastfetch 和 Fcitx5 + Rime。浅色和深色配色可以在控制中心切换。天气、壁纸、媒体和系统状态都可在顶栏访问。
 
-## 使用
+## 1. 按发行版安装
 
-1. 安装所需应用，备份现有配置后，把仓库 `.config/` 下所需的应用目录复制到 `~/.config/`。Niri 使用 `swaybg` 加载咖啡壁纸。
-2. 将 `.zshrc` 和 `.zimrc` 复制到主目录。按 [Zim 的手动安装说明](https://github.com/zimfw/zimfw#manual-installation) 将 `zimfw.zsh` 放到 `~/.zim/`，再运行 `ZIM_HOME="$HOME/.zim" zsh -c 'source "$ZIM_HOME/zimfw.zsh" install'`。
-3. 安装 `swaync` 后，在 Niri 会话的终端运行 `systemctl --user enable --now swaync.service`。如果另一套通知服务正在运行，先停止它。
-4. `Mod+D` 打开 Rofi，`Mod+T` 打开 Kitty，`Mod+N` 切换通知中心，`Mod+Shift+N` 切换勿扰。新的 Kitty 终端会启动独立的 tmux 会话，并在第一个窗格显示 Fastfetch。
+完整配置以 **Niri 26.04、Waybar 0.16、Rofi 2.1.1（Wayland）、SwayNC 0.12.6** 为验证基线。Niri 的背景模糊依赖 26.04 或更新版本。下列包名按发行版区分。桌面实机验证环境为 Arch Linux。
 
-## Waybar 字体
+### Arch Linux
 
-在 Arch Linux 上安装 `sudo pacman -S --needed ttf-nerd-fonts-symbols-mono`，然后重启 Waybar。
+```sh
+sudo pacman -Syu --needed git niri waybar rofi swaync swaybg kitty \
+  python-gobject python-cairo gtk3 gtk-layer-shell playerctl wireplumber \
+  brightnessctl wdisplays networkmanager nm-connection-editor bluez-utils \
+  blueman pavucontrol adwaita-fonts noto-fonts-cjk ttf-nerd-fonts-symbols-mono \
+  zsh tmux fastfetch neovim zstd
+sudo pacman -S --needed fcitx5 fcitx5-gtk fcitx5-qt fcitx5-configtool \
+  fcitx5-rime rime-luna-pinyin
+```
 
-- `ttf-nerd-fonts-symbols-mono` 提供 **Symbols Nerd Font Mono**，用于工作区、时钟、CPU、内存、网络、音量和通知图标。
-- `ttf-nerd-fonts-symbols-common` 随上面的包一同安装，提供共享 Fontconfig 配置。
-- 正文仍使用桌面已有的 **Adwaita Sans**。
+`ttf-nerd-fonts-symbols-mono` 提供 **Symbols Nerd Font Mono**，并自动安装 `ttf-nerd-fonts-symbols-common`。上面的组件来自 Arch 正式仓库。使用其他中文社区软件时，可按社区说明另行添加签名校验的 Arch Linux CN 源。 [Arch Linux CN 仓库](https://github.com/archlinuxcn/repo)
 
-## Waybar 媒体控制
+### Debian
 
-安装 Arch 的 `playerctl` 包。Waybar 在检测到 MPRIS 播放器时显示媒体标题和播放控件。上一首和下一首取决于播放器或网页提供的操作。
+适用于 Debian 13（Trixie）及更新版本。Trixie 的仓库有常用依赖，Waybar 为 0.12，Rofi 1.7 系列早于本配置使用的原生 Wayland 版本。安装依赖后，按下面的「版本不足时」准备 Niri、Waybar 和 Rofi。 [Debian Waybar](https://packages.debian.org/trixie/waybar) · [Debian Rofi](https://packages.debian.org/trixie/rofi)
 
-## Waybar 控制中心
+```sh
+sudo apt update
+sudo apt install git swaybg kitty python3-gi python3-gi-cairo \
+  gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 playerctl wireplumber \
+  brightnessctl network-manager network-manager-gnome bluez blueman \
+  pavucontrol fonts-noto-cjk fontconfig zsh tmux neovim zstd
+sudo apt install fcitx5 fcitx5-config-qt fcitx5-frontend-gtk3 \
+  fcitx5-rime rime-data-luna-pinyin
+```
 
-点击 Waybar 最右侧的下拉箭头打开或关闭控制中心。面板提供媒体播放、音量与亮度、显示、网络、蓝牙、天气和壁纸设置。
+用 `apt-cache policy sway-notification-center wdisplays fastfetch` 检查对应套件的候选版本。Trixie 提供 SwayNC 0.11，完整通知主题建议用上游 0.12.6 或更新版。 [Debian SwayNC 版本](https://packages.debian.org/search?keywords=sway-notification-center&searchon=sourcenames)
 
-- Arch Linux 依赖包括 `python-gobject`、`python-cairo`、`gtk3`、`gtk-layer-shell`、`playerctl`、`wireplumber`、`brightnessctl`、`wdisplays`、`networkmanager`、`nm-connection-editor`、`bluez-utils`、`blueman`、`pavucontrol`、`swaybg` 和 `noto-fonts-cjk`。亮度调节需要硬件背光。
-- 复制配置时保留 `.config/waybar/control-center/wallpaper` 的执行权限。Niri 登录后通过它加载已选壁纸，默认使用仓库里的咖啡壁纸。
-- 天气使用 [Open-Meteo](https://open-meteo.com/)，地图来自 [OpenStreetMap](https://www.openstreetmap.org/copyright)。最近查询的城市和地图缓存保存在用户本机。
+### Ubuntu
 
-## 外观和状态小岛
+建议从 Ubuntu 26.04 LTS 开始。若尚未启用 Universe，先运行 `sudo add-apt-repository universe`。26.04 的 Waybar 0.15 和 Rofi 2.0 可用于尝试基础配置。要复现本仓库的效果，建议按下节准备验证基线版本，并单独安装 Niri。 [Ubuntu Waybar](https://packages.ubuntu.com/resolute/waybar) · [Ubuntu Rofi](https://packages.ubuntu.com/resolute/rofi)
 
-- 控制中心的「外观」支持浅色、深色和自动模式。复制配置时保留符号链接，再运行 `systemctl --user daemon-reload` 及 `systemctl --user enable --now dusk-appearance.timer`，启用 07:00／19:00 自动切换。
-- Waybar 中间小岛用滚轮切换时间、日期、系统占用和 Token 用量，点击展开详情。用量来自本机 Codex、Claude Code 或 DeepSeek Harness 的会话日志，有记录才显示。压缩的 DeepSeek Harness 日志需要 `zstd`。
+```sh
+sudo apt update
+sudo apt install git waybar rofi sway-notification-center swaybg kitty \
+  python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 \
+  playerctl wireplumber brightnessctl network-manager network-manager-gnome \
+  bluez blueman pavucontrol fonts-noto-cjk fontconfig zsh tmux neovim zstd
+sudo apt install fcitx5 fcitx5-config-qt fcitx5-frontend-gtk3 \
+  fcitx5-rime rime-data-luna-pinyin
+```
+
+显示设置使用 `wdisplays`，终端启动摘要使用 `fastfetch`。用 `apt-cache policy wdisplays fastfetch` 检查候选包，或从各自上游安装。
+
+### Fedora
+
+优先使用 Fedora 45 或更新版。Fedora 44 提供 Niri 26.04，Waybar 为 0.15。若需要与本配置一致的顶栏行为，按下节准备较新的 Waybar。 [Fedora Niri](https://packages.fedoraproject.org/pkgs/niri/niri/) · [Fedora Waybar](https://packages.fedoraproject.org/pkgs/waybar/waybar/)
+
+```sh
+sudo dnf install git niri waybar rofi SwayNotificationCenter swaybg kitty \
+  python3-gobject python3-cairo gtk3 gtk-layer-shell playerctl wireplumber \
+  brightnessctl NetworkManager nm-connection-editor bluez blueman pavucontrol \
+  google-noto-sans-cjk-fonts fontconfig zsh tmux fastfetch neovim zstd
+sudo dnf install fcitx5 fcitx5-gtk fcitx5-rime
+```
+
+如缺少显示工具或简化拼音方案，可用 `dnf provides '*/wdisplays'` 和 `dnf provides '*/luna_pinyin_simp.schema.yaml'` 查询当前版本的软件包。
+
+### 版本不足时
+
+- **Niri**：从同发行版的软件源安装 26.04 或更新版。无合适包时，按上游说明安装 Rust 和系统开发依赖，构建稳定标签，并安装 `niri-session`、会话文件和 systemd 用户单元。只复制 `niri` 二进制会缺少图形会话集成。 [Niri 安装与构建](https://niri-wm.github.io/niri/Getting-Started.html)
+- **Waybar**：构建或安装 0.16 或更新版，确保启用 Niri、MPRIS、GTK Layer Shell 和 StatusNotifier 托盘支持。 [Waybar 构建说明](https://github.com/Alexays/Waybar/wiki/Installation)
+- **Rofi**：使用 2.1.1 或更新版的 Wayland 构建。运行 `rofi -help` 核实 Wayland 支持与 `-no-click-to-exit` 选项。 [Rofi 发行版](https://github.com/davatorium/rofi/releases)
+- **SwayNC**：使用 0.12.6 或更新版可复现本仓库的通知主题和控制命令。 [SwayNC 安装说明](https://github.com/ErikReider/SwayNotificationCenter#installation)
+
+### 字体
+
+Waybar、Rofi 和控制中心的图标使用 **Symbols Nerd Font Mono**。Debian、Ubuntu 和 Fedora 如无同名字体包，从 Nerd Fonts 发布页下载 `NerdFontsSymbolsOnly.zip`，解压后安装符号字体。 [Nerd Fonts 发布页](https://github.com/ryanoasis/nerd-fonts/releases)
+
+```sh
+install -Dm644 SymbolsNerdFontMono-Regular.ttf \
+  "$HOME/.local/share/fonts/SymbolsNerdFontMono-Regular.ttf"
+fc-cache -f
+fc-match "Symbols Nerd Font Mono"
+```
+
+界面优先使用 **Adwaita Sans**，Kitty 使用 **Adwaita Mono**，中文由 **Noto Sans CJK SC** 提供。发行版没有 Adwaita 字体时，可以从上游安装，或把 Kitty 的 `font_family` 改成已有的等宽字体。 [Adwaita 字体](https://gitlab.gnome.org/GNOME/adwaita-fonts)
+
+## 2. 复制配置并启动会话
+
+以下命令使用默认配置目录 `~/.config`。从 Linux 克隆仓库并使用 `cp -a`，这样会保留主题符号链接和壁纸启动脚本的执行权限。
+
+```sh
+git clone https://github.com/scaraOvO/niri.git
+cd niri
+backup=$(mktemp -d "$HOME/.niri-backup-XXXXXX")
+mkdir -p "$HOME/.config"
+for name in niri waybar swaync rofi kitty fastfetch nvim tmux systemd fcitx5; do
+  if [ -e "$HOME/.config/$name" ]; then
+    cp -a "$HOME/.config/$name" "$backup/"
+  fi
+done
+niri validate -c .config/niri/config.kdl
+cp -a .config/. "$HOME/.config/"
+printf '配置备份位于 %s\n' "$backup"
+```
+
+从登录管理器选择 **Niri**，或在 TTY 手动运行 `niri-session`。在 **Niri 会话里的终端**启用用户服务：
+
+```sh
+systemctl --user daemon-reload
+systemctl --user enable --now dusk-appearance.timer
+systemctl --user enable --now swaync.service
+```
+
+若系统正在用 Mako 或 Dunst，先停止原通知服务。若发行版的 SwayNC 包未提供 `swaync.service`，可在 Niri 配置加 `spawn-at-startup "swaync"`，下次登录启动。NetworkManager、WirePlumber 和 BlueZ 由发行版管理，控制中心读取相应服务与硬件状态。亮度调节需要可用的背光设备。
+
+## 3. 中文输入与终端
+
+Fcitx5 会随 Niri 启动。已随仓库提供 Fcitx5 配置和朙月拼音·简化字方案。若已有自己的 Rime 配置，保留原文件并在输入法设置中选用自己的方案。
+
+```sh
+rime="$HOME/.local/share/fcitx5/rime"
+mkdir -p "$rime"
+if [ ! -e "$rime/default.custom.yaml" ]; then
+  install -m644 .local/share/fcitx5/rime/default.custom.yaml "$rime/"
+fi
+```
+
+在图形会话的输入框里按 `Ctrl+Space` 切换中英文。Niri 下优先使用 Wayland 原生输入法接口。 [Fcitx Wayland 文档](https://fcitx-im.org/wiki/Using_Fcitx_5_on_Wayland)
+
+要使用 Zim，先备份自己已有的 `.zshrc` 和 `.zimrc`，再复制仓库文件。按 Zim 手动安装说明把 `zimfw.zsh` 放到 `~/.zim/` 后安装模块。 [Zim 手动安装](https://github.com/zimfw/zimfw#manual-installation)
+
+```sh
+for name in .zshrc .zimrc; do
+  if [ -e "$HOME/$name" ]; then cp -a "$HOME/$name" "$backup/"; fi
+done
+cp -a .zshrc .zimrc "$HOME/"
+ZIM_HOME="$HOME/.zim" zsh -c 'source "$ZIM_HOME/zimfw.zsh" install'
+```
+
+新 Kitty 窗口会创建独立的 tmux 会话，第一个窗格显示 Fastfetch。
+
+## 4. 常用入口
+
+| 入口 | 功能 |
+| --- | --- |
+| `Super+T` | 打开 Kitty |
+| `Super+D` | 打开 Rofi，按 `Esc` 关闭 |
+| `Super+N` | 打开通知中心 |
+| `Super+Shift+N` | 切换勿扰 |
+| Waybar 最右侧下拉箭头 | 打开控制中心，调整外观、音量、壁纸和天气 |
+| Waybar 中间小岛 | 滚轮切换信息，点击展开详情 |
+
+自动主题按本机时间在 **07:00** 切到浅色、**19:00** 切到深色。小岛读取本机 Codex、Claude Code 与 DeepSeek Harness 会话日志，没有可读记录时跳过 Token 页。天气使用 Open-Meteo，地图使用 OpenStreetMap。最近查询的城市、已选壁纸和地图缓存保存在本机。 [Open-Meteo](https://open-meteo.com/) · [OpenStreetMap](https://www.openstreetmap.org/copyright)

@@ -1,0 +1,61 @@
+/* 搜索框与结果列表共用一块磨砂底板。 */
+window {
+    location: north;
+    anchor: north;
+    y-offset: 12%;
+    width: 700px;
+    background-color: @surface;
+    border: 1px;
+    border-color: @outline;
+    border-radius: 22px;
+}
+mainbox {
+    padding: 0;
+    spacing: 3px;
+    children: [ inputbar, listview ];
+}
+inputbar {
+    padding: 13px 20px;
+    spacing: 13px;
+    border: 0 0 1px 0;
+    border-color: @outline;
+    background-color: transparent;
+    children: [ prompt, entry ];
+}
+prompt {
+    text-color: @muted;
+    font: "Symbols Nerd Font Mono 15";
+    vertical-align: 0.5;
+}
+entry {
+    font: "Adwaita Sans 15";
+    placeholder: "搜索应用";
+    placeholder-color: @muted;
+    padding: 0 0 5px;
+    vertical-align: 0.5;
+}
+listview {
+    padding: 6px 8px 8px;
+    background-color: transparent;
+    lines: 7;
+    columns: 1;
+    fixed-height: false;
+    scrollbar: false;
+    spacing: 3px;
+}
+element {
+    padding: 9px 15px;
+    spacing: 13px;
+    border-radius: 15px;
+    children: [ element-icon, element-text ];
+}
+element normal.normal, element alternate.normal {
+    background-color: transparent;
+    text-color: @foreground;
+}
+element selected.normal, element selected.active, element selected.urgent {
+    background-color: @selection;
+    text-color: @selected-text;
+}
+element-icon { size: 31px; }
+element-text { vertical-align: 0.5; text-color: inherit; }
