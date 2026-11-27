@@ -1,0 +1,58 @@
+#dusk-desktop-widget {
+  background: transparent;
+  color: @widget_ink;
+  font-family: "Adwaita Sans", "Noto Sans CJK SC", sans-serif;
+  font-size: 14px;
+}
+#dusk-desktop-widget label {
+  color: #ffffff;
+  text-shadow: none;
+}
+.desktop-clock { font-size: 48px; font-weight: 800; }
+.desktop-date { font-size: 16px; font-weight: 600; }
+.desktop-weather { font-size: 18px; font-weight: 700; }
+.desktop-metric { font-weight: 700; }
+.desktop-metric trough {
+  background: alpha(@widget_ink, 0.27);
+  border-radius: 6px;
+  border: none;
+  min-height: 5px;
+}
+.desktop-metric progress {
+  background: @widget_accent;
+  border-radius: 6px;
+  border: none;
+  min-height: 5px;
+}
+#dusk-widget-editor {
+  background: transparent;
+  color: @widget_ink;
+}
+#widget-editor-card {
+  background: @widget_surface;
+  border: 1px solid alpha(@widget_edge, 0.65);
+  border-radius: 20px;
+  padding: 18px;
+}
+.widget-editor-title { font-size: 17px; font-weight: 700; }
+
+#dusk-desktop-widget.system-widget {
+  border: 1px solid alpha(@widget_edge, 0.45);
+  border-radius: 15px;
+  padding: 8px 4px;
+}
+.system-title { font-size: 15px; font-weight: 700; }
+.desktop-metric {
+  border: 1px solid alpha(@widget_edge, 0.35);
+  border-radius: 10px;
+  padding: 7px;
+}
+.metric-name { font: 600 11px "Adwaita Sans"; }
+.metric-value { font-size: 17px; font-weight: 700; }
+.cpu-trend { color: @widget_accent; }
+#widget-editor-card { padding: 8px 13px; border-radius: 17px; }
+
+.docker-subtle { font-size: 11px; }
+.docker-container-name { font-size: 13px; font-weight: 700; }
+.docker-detail { font-size: 11px; font-weight: 600; }
+.docker-running { color: @widget_accent; font-size: 11px; }

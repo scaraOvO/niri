@@ -149,6 +149,8 @@ ZIM_HOME="$HOME/.zim" zsh -c 'source "$ZIM_HOME/zimfw.zsh" install'
 | `Super+D` | 打开 Rofi，按 `Esc` 关闭 |
 | `Super+N` | 打开通知中心 |
 | `Super+Shift+N` | 切换勿扰 |
+| `Super+Shift+O` | 显示或隐藏桌面小组件 |
+| `Super+Ctrl+O` | 进入或退出桌面小组件编辑模式 |
 | Waybar 最右侧下拉箭头 | 打开控制中心，调整外观、媒体与设备、网络、蓝牙和壁纸 |
 | Waybar 中间小岛 | 滚轮切换时间、日期、天气、Token 用量和系统占用，点击展开详情 |
 
@@ -263,3 +265,26 @@ notify-send '通知预览' '标题和正文均居中'
 ```
 
 若通过 Niri 直接启动 SwayNC，可使用 `spawn-at-startup "sh" "-c" "exec \"$HOME/.config/swaync/launch\""` 调用同一个启动脚本。
+
+## 8. 桌面小组件
+
+桌面小组件随 Niri 启动，位于应用窗口后方。时钟、日期、天气、系统占用和 Docker 可独立摆放。组件使用局部背景模糊和纯白文字。天气沿用顶栏小岛保存的城市。
+
+按 `Super+Ctrl+O` 进入编辑模式。Niri 会在当前输出切到空工作区，拖动桌面上的组件即可调整位置。工具条上的复选框可添加或移除组件。点击「完成」或按 `Esc` 返回原工作区。布局保存到 `$XDG_STATE_HOME/dusk-control/desktop-widgets.json`，默认位于 `~/.local/state/dusk-control/`。
+
+### Docker 小组件
+
+Docker 小组件读取当前用户的 Docker CLI context，显示容器状态、CPU 和内存用量。安装 Docker CLI 并确认 `docker ps` 能访问 daemon 后即可使用。组件可在编辑工具条中单独开关。
+
+Arch Linux 使用 Rootless Docker 时，可在已经启用 Arch Linux CN 源的环境中安装并启用用户 socket。 [Docker Rootless 文档](https://docs.docker.com/engine/security/rootless/)
+
+```sh
+sudo pacman -S --needed docker docker-rootless-extras rootlesskit slirp4netns
+systemctl --user enable --now docker.socket
+docker context inspect rootless >/dev/null 2>&1 || \
+  docker context create rootless --docker "host=unix://$XDG_RUNTIME_DIR/docker.sock"
+docker context use rootless
+docker ps
+```
+
+Debian、Ubuntu 和 Fedora 可沿用已配置的 Docker context，或按 Docker 官方说明配置 Rootless Docker。

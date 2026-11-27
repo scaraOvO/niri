@@ -153,6 +153,8 @@ binds {
     XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
 
     Mod+O repeat=false { toggle-overview; }
+    Mod+Shift+O repeat=false hotkey-overlay-title="桌面小组件" { spawn-sh "exec python3 -B \"$HOME/.config/waybar/control-center/desktop_widgets.py\" toggle"; }
+    Mod+Ctrl+O repeat=false hotkey-overlay-title="编辑桌面小组件" { spawn-sh "exec python3 -B \"$HOME/.config/waybar/control-center/desktop_widgets.py\" edit"; }
 
     Mod+Q repeat=false { close-window; }
 
@@ -381,3 +383,14 @@ layer-rule {
 }
 
 include "wallpaper-palette.kdl" optional=true
+
+spawn-at-startup "sh" "-c" "exec python3 -B \"$HOME/.config/waybar/control-center/desktop_widgets.py\" show"
+
+layer-rule {
+    match namespace="^dusk-desktop-widget-(clock|date|weather|system|docker)$"
+    geometry-corner-radius 15
+    background-effect {
+        blur true
+        xray false
+    }
+}
