@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
+from itertools import islice
 from math import asinh, cos, exp, floor, pi, radians, sin, tan
 from pathlib import Path
 import json
@@ -594,6 +595,7 @@ class ControlCenter(Gtk.Application):
         self.wallpaper_status = label("", "muted")
         self.gallery = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, column_spacing=12, row_spacing=12)
         self.gallery.set_homogeneous(True)
+        self.gallery.set_valign(Gtk.Align.START)
         self.gallery.set_min_children_per_line(2)
         self.gallery.set_max_children_per_line(4)
         scroll = Gtk.ScrolledWindow()
@@ -602,7 +604,7 @@ class ControlCenter(Gtk.Application):
         scroll.add(self.gallery)
         self.put(page, row(
             button("选择图片", self.choose_wallpaper),
-            button("重新扫描", self.refresh_gallery),
+            button("重新扫描", lambda: self.refresh_gallery(force=True)),
             button("恢复系统默认", lambda: self.apply_wallpaper(None)),
         ), label(str(self.gallery_path), "muted"), self.wallpaper_status)
         page.pack_start(scroll, True, True, 0)
@@ -611,7 +613,7 @@ class ControlCenter(Gtk.Application):
         self.gallery_generation = 0
         return page
 
-    def refresh_gallery(self):
+    def refresh_gallery(self, force=False):
         self.gallery_path.mkdir(parents=True, exist_ok=True)
         extensions = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".avif", ".tiff"}
         items = sorted((path for path in self.gallery_path.iterdir()
@@ -623,7 +625,7 @@ class ControlCenter(Gtk.Application):
                 stamp.append((path, path.stat().st_mtime_ns))
             except OSError:
                 continue
-        if stamp == self.gallery_stamp:
+        if not force and stamp == self.gallery_stamp:
             self.highlight_wallpaper()
             return
         self.gallery_stamp = stamp
@@ -641,11 +643,8 @@ class ControlCenter(Gtk.Application):
         def load_batch():
             if self.window is None or generation != self.gallery_generation:
                 return False
-            for _ in range(6):
-                path = next(pending, None)
-                if path is None:
-                    self.highlight_wallpaper()
-                    return False
+            batch = list(islice(pending, 6))
+            for path in batch:
                 try:
                     texture = GdkPixbuf.Pixbuf.new_from_file_at_scale(str(path), 148, 87, True)
                 except GLib.Error:
@@ -657,7 +656,7 @@ class ControlCenter(Gtk.Application):
                 preview = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
                 image = Gtk.Image.new_from_pixbuf(texture)
                 image.set_size_request(148, 87)
-                name = label("咖啡壁纸" if path.name == "wanderer_coffee.jpg" else path.stem)
+                name = label(path.stem)
                 name.set_ellipsize(Pango.EllipsizeMode.END)
                 name.set_max_width_chars(16)
                 name.set_xalign(.5)
@@ -665,9 +664,12 @@ class ControlCenter(Gtk.Application):
                 card.add(preview)
                 self.gallery_index[str(path)] = card
                 self.gallery.add(card)
+            finished = len(batch) < 6
+            if finished and not self.gallery_index:
+                self.gallery.add(label("目录中的图片无法解码。", "muted"))
             self.gallery.show_all()
             self.highlight_wallpaper()
-            return True
+            return not finished
         GLib.idle_add(load_batch)
 
     def highlight_wallpaper(self):
