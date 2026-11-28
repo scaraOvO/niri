@@ -158,7 +158,7 @@ binds {
     Mod+N hotkey-overlay-title="Toggle notification center" { spawn "swaync-client" "--toggle-panel"; }
     Mod+Shift+N hotkey-overlay-title="Toggle notification quiet mode" { spawn "swaync-client" "--toggle-dnd"; }
     Mod+Ctrl+N hotkey-overlay-title="Dismiss all notifications" { spawn "swaync-client" "--close-all"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
+    Super+Alt+L repeat=false hotkey-overlay-title="Lock screen" { spawn-sh "exec python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/hypr/dusk-lock.py\""; }
 
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
 

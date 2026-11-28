@@ -11,4 +11,8 @@ fi
 if [ ! -s "$image" ]; then
     image="$config_dir/niri/wanderer_coffee.jpg"
 fi
+if [ "${1:-}" = --print-path ]; then
+    printf '%s\n' "$image"
+    exit
+fi
 exec swaybg -i "$image" -m fill
