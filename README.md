@@ -109,7 +109,7 @@ printf '配置备份位于 %s\n' "$backup"
 
 ```sh
 systemctl --user daemon-reload
-systemctl --user enable --now dusk-appearance.timer
+systemctl --user enable --now dusk-appearance.timer dusk-weather.timer
 systemctl --user enable --now swaync.service
 ```
 
@@ -288,3 +288,31 @@ docker ps
 ```
 
 Debian、Ubuntu 和 Fedora 可沿用已配置的 Docker context，或按 Docker 官方说明配置 Rootless Docker。
+
+
+## 9. 剪贴板和配置更新
+
+剪贴板需要 `cliphist`、`wl-clipboard` 和 `flock`。Arch 可用 `sudo pacman -S --needed cliphist wl-clipboard`。Fedora 用 `dnf provides '*/cliphist'` 检查当前软件源。按 `Super+Ctrl+V` 搜索并恢复剪贴板，按 `Super+Ctrl+Shift+V` 删除单条、确认清空或暂停记录。
+
+小岛和桌面天气在本机共用缓存。运行 `dusk-weather.timer` 后，后台每 15 分钟刷新。
+
+在 Arch 或 Fedora 的普通用户终端，从仓库根目录运行：
+
+```sh
+tools/dusk-config check
+tools/dusk-config plan
+tools/dusk-config apply
+tools/dusk-config rollback /path/to/printed/backup
+```
+
+`check` 报告依赖、用户服务和可选编译版的状态。`plan` 只显示差异；`apply` 先验证 Niri 配置，再备份并更新仓库管理的 `.config` 文件。`rollback` 使用输出的备份路径，遇到更新后另行修改的文件会停止。备份文件可以用来手工合并。已生成的配色和本机主题选择会保留。
+
+## 10. 场景、快捷操作和壁纸预览
+
+按 `Super+Shift+D` 打开 Rofi 快捷操作，可搜索壁纸、通知中心、主题、场景与窗口归位设置。
+
+控制中心「场景」提供日常、专注和演示。专注与演示会开启勿扰，并淡出桌面小组件。演示取消 Firefox 和 Code 的窗口透明效果。回到日常时恢复原状态。
+
+同页可启用新窗口归位。Firefox 和 Kitty 打开在 `browse`，列宽分别约为 69% 和 30%；Code 打开在 `develop`，列宽约为 76%。已打开的窗口保留原位置。
+
+点击壁纸缩略图会展开 Waybar、小岛和控制中心的配色预览，显示预估对比度。确认后才更换壁纸并启用壁纸取色。

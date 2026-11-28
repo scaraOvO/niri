@@ -22,7 +22,12 @@
     "custom/control-center"
   ],
   "niri/workspaces": {
-    "format": "{name}",
+    "format": "{icon}",
+    "format-icons": {
+      "develop": "",
+      "browse": "",
+      "default": ""
+    },
     "disable-scroll": true
   },
   "niri/window": {

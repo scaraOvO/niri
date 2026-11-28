@@ -1,0 +1,21 @@
+workspace "browse" {}
+workspace "develop" {}
+
+window-rule {
+    match app-id=r#"^(firefox|org\.mozilla\.firefox)$"#
+    exclude title="^Picture-in-Picture$"
+    open-on-workspace "browse"
+    default-column-width { proportion 0.69; }
+}
+
+window-rule {
+    match app-id="^kitty$"
+    open-on-workspace "browse"
+    default-column-width { proportion 0.30; }
+}
+
+window-rule {
+    match app-id=r#"^(code|Code|code-oss|com\.visualstudio\.code)$"#
+    open-on-workspace "develop"
+    default-column-width { proportion 0.76; }
+}

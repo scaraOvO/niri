@@ -12,10 +12,9 @@ from threading import Thread
 
 import appearance
 from usage import available_usage
-from weather import weather, weather_condition
+from weather import weather_condition
+from weather_cache import cached_weather, saved_city, update_weather
 
-CITY_FILE = appearance.STATE / "weather-city"
-WEATHER_CACHE = appearance.STATE / "island-weather.json"
 MODE_FILE = appearance.STATE / "island-page"
 MODE_NAMES = {"weather": "天气", "time": "时间", "date": "日期", "tokens": "Token 用量", "system": "系统占用"}
 
@@ -77,13 +76,6 @@ def clock_markup(value, mode, compact=False):
         if compact else 'weight="750" letter_spacing="1600"'
     )
     return f'<span {attributes}>{separator.join(value.split(":"))}</span>'
-
-
-def cached_weather():
-    try:
-        return json.loads(WEATHER_CACHE.read_text())
-    except (OSError, ValueError):
-        return {}
 
 
 def waybar_text(page, usage):
@@ -277,10 +269,7 @@ def show_panel():
 
             self.content.set_size_request(704, 150)
             saved = cached_weather()
-            try:
-                city = CITY_FILE.read_text().strip()
-            except OSError:
-                city = ""
+            city = saved_city()
             tools = Gtk.Box(spacing=12)
             self.print_line(MODE_NAMES["weather"], "heading", tools)
             entry = Gtk.Entry(text=city, placeholder_text="搜索城市", hexpand=True)
@@ -320,14 +309,6 @@ def show_panel():
                     return False
                 query.set_sensitive(True)
                 if data:
-                    try:
-                        CITY_FILE.parent.mkdir(parents=True, exist_ok=True)
-                        CITY_FILE.write_text(name + "\n")
-                        temporary = WEATHER_CACHE.with_suffix(".tmp")
-                        temporary.write_text(json.dumps({"city": name, "updated": time.time(), "data": data}))
-                        temporary.replace(WEATHER_CACHE)
-                    except OSError:
-                        pass
                     search.set_active(False)
                     refresh_waybar()
                 render(data or cached_weather().get("data"), error)
@@ -342,7 +323,7 @@ def show_panel():
 
                 def fetch():
                     try:
-                        data = weather(name)
+                        data = update_weather(name)
                     except (OSError, ValueError, KeyError):
                         GLib.idle_add(finish, name, None, "天气查询失败，请检查城市名或稍后重试。")
                     else:
@@ -352,8 +333,12 @@ def show_panel():
             entry.connect("activate", load)
             query.connect("clicked", load)
             render(saved.get("data"), "" if city else "点击搜索按钮，添加城市。")
-            if city and (saved.get("city") != city or time.time() - saved.get("updated", 0) > 900):
-                load()
+            def sync():
+                data = cached_weather().get("data")
+                if query.get_sensitive() and data and data != displayed_data:
+                    render(data)
+
+            self.sync_weather_view = sync
 
         def calendar_view(self, today):
             year, month = today.year, today.month
@@ -444,6 +429,8 @@ def show_panel():
             caption = f" {payload[0]}%   󰍛 {payload[1]}%" if page == "system" else waybar_text(page, usage)
             self.head.set_label(caption)
             self.head.get_child().set_use_markup(page in ("time", "weather"))
+            if page == "weather" and self.displayed and self.displayed[0] == "weather":
+                self.sync_weather_view()
             if (page, payload, mode) == self.displayed:
                 return True
             if page in ("date", "weather") and self.displayed is not None and self.displayed[0] == page:

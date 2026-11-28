@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh Dusk desktop weather cache
+
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/python3 -B %h/.config/waybar/control-center/weather_cache.py
+TimeoutStartSec=35

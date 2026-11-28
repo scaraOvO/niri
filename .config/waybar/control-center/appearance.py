@@ -73,7 +73,7 @@ def apply(chosen=None, source=None, strength=None):
         strength = strength or old_strength
         color_source = wallpaper_colors.sample(CONFIG, STATE) if source == "wallpaper" or mode == "wallpaper" else None
         active = resolve(mode, datetime.now().hour, color_source["brightness"] if color_source else None)
-        palette = wallpaper_colors.palette(color_source, active, strength) if source == "wallpaper" and color_source else {}
+        palette = wallpaper_colors.palette(color_source, active, strength, .54 if mode == 'glass' else .76) if source == "wallpaper" and color_source else {}
         files = wallpaper_colors.files(CONFIG, palette)
         if mode == "glass":
             wallpaper_colors.glass_surfaces(CONFIG, palette, files)

@@ -1,0 +1,83 @@
+#!/bin/sh
+umask 077
+state="${XDG_STATE_HOME:-$HOME/.local/state}/dusk-control"
+paused="$state/clipboard-paused"
+launcher="$HOME/.config/rofi/launch"
+
+lock() {
+    mkdir -p "$state" || return
+    exec 9>"$state/clipboard.lock"
+    flock -x 9
+}
+
+choose_entry() {
+    entries=$(cliphist list) || return 1
+    if [ -z "$entries" ]; then
+        notify-send "剪贴板历史" "暂无历史记录。"
+        return 1
+    fi
+    printf '%s\n' "$entries" |
+        DUSK_ROFI_CLIPBOARD=1 "$launcher" -dmenu -i -no-custom -no-show-icons -display-columns 2 -p ''
+}
+
+choose_action() {
+    DUSK_ROFI_CLIPBOARD=manage "$launcher" -dmenu -no-custom -no-show-icons -p ''
+}
+
+case "$1" in
+    watch)
+        exec wl-paste --type text --watch "$0" store
+        ;;
+    store)
+        case "$CLIPBOARD_STATE" in nil|clear|sensitive) exit 0 ;; esac
+        lock || exit 1
+        [ -e "$paused" ] && exit 0
+        exec cliphist -max-items 100 store
+        ;;
+    menu)
+        selected=$(choose_entry) || exit 0
+        [ -n "$selected" ] || exit 0
+        decoded=$(mktemp "$XDG_RUNTIME_DIR/dusk-clipboard.XXXXXX") || exit 1
+        trap 'rm -f -- "$decoded"' EXIT
+        printf '%s\n' "$selected" | cliphist decode > "$decoded" || exit 1
+        wl-copy --type 'text/plain;charset=utf-8' < "$decoded"
+        ;;
+    manage)
+        delete="删除单条记录"
+        wipe="清空历史"
+        if [ -e "$paused" ]; then recording="恢复记录"; else recording="暂停记录"; fi
+        action=$(printf '%s\n' "$delete" "$recording" "$wipe" | choose_action) || exit 0
+        case "$action" in
+            "$delete")
+                selected=$(choose_entry) || exit 0
+                "$0" delete "$selected"
+                ;;
+            "$recording")
+                if [ -e "$paused" ]; then "$0" resume; else "$0" pause; fi
+                ;;
+            "$wipe")
+                confirm="确认清空全部记录"
+                answer=$(printf '%s\n' "取消" "$confirm" | choose_action) || exit 0
+                [ "$answer" = "$confirm" ] && "$0" wipe
+                ;;
+        esac
+        ;;
+    delete)
+        [ -n "$2" ] || exit 2
+        lock || exit 1
+        printf '%s\n' "$2" | cliphist delete
+        ;;
+    pause)
+        lock || exit 1
+        : > "$paused"
+        ;;
+    resume)
+        lock || exit 1
+        rm -f -- "$paused"
+        ;;
+    wipe)
+        lock || exit 1
+        exec cliphist wipe
+        ;;
+    *) exit 2 ;;
+esac

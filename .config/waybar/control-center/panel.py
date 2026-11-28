@@ -6,8 +6,12 @@ import json
 import os
 import re
 import subprocess
+import sys
+from datetime import datetime
 import time
 import appearance
+import scenes
+import wallpaper_colors
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -150,9 +154,22 @@ class ExpressiveTrack(Gtk.Overlay):
 
 class ControlCenter(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id="io.github.scaraovo.DuskControl", flags=Gio.ApplicationFlags.FLAGS_NONE)
+        super().__init__(application_id="io.github.scaraovo.DuskControl", flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.window = None
         self.pool = ThreadPoolExecutor(max_workers=2)
+
+    def do_command_line(self, command):
+        args = command.get_arguments()[1:]
+        if not args:
+            self.activate()
+        elif len(args) == 1 and args[0] in ("wallpaper", "appearance", "scenes"):
+            if self.window is None:
+                self.activate()
+            if self.window is not None and not self.closing:
+                self.select(args[0])
+        else:
+            return 2
+        return 0
 
     def do_activate(self):
         if self.window is not None:
@@ -258,6 +275,7 @@ class ControlCenter(Gtk.Application):
             ("wifi", "\uf1eb", "网络", self.network_page),
             ("bluetooth", "\uf294", "蓝牙", self.bluetooth_page),
             ("wallpaper", "\uf03e", "壁纸", self.wallpaper_page),
+            ("scenes", "\uf0d0", "场景", self.scenes_page),
             ("appearance", "\uf1fc", "外观", self.appearance_page),
         ):
             tab = button(f"{glyph}  {title}", lambda name=ident: self.select(name))
@@ -410,6 +428,60 @@ class ControlCenter(Gtk.Application):
         self.put(page, self.bluetooth, row(self.bluetooth_toggle, button("管理设备", lambda: self.open("blueman-manager"))))
         return page
 
+    def scenes_page(self):
+        page = self.page()
+        self.scene_buttons = {}
+        self.scene_busy = False
+        self.scene_feedback = label("", "muted")
+        for mode, title in (("normal", "日常"), ("focus", "专注"), ("presentation", "演示")):
+            self.scene_buttons[mode] = button(title, lambda value=mode: self.run_scene(value))
+        self.placement_button = button("", lambda: self.run_scene(
+            "placement-off" if scenes.PLACEMENT.is_file() else "placement-on"))
+        self.put(page, row(*self.scene_buttons.values()), self.scene_feedback,
+                 label("窗口归位", "track"),
+                 label("Firefox + Kitty  →  browse  ·  Code  →  develop", "muted"),
+                 self.placement_button)
+        self.update_scene_controls()
+        return page
+
+    def update_scene_controls(self):
+        active = scenes.scene()
+        for name, widget in self.scene_buttons.items():
+            style = widget.get_style_context()
+            style.add_class("primary-action") if name == active else style.remove_class("primary-action")
+            widget.set_sensitive(not self.scene_busy)
+        self.placement_button.set_label("关闭新窗口归位" if scenes.PLACEMENT.is_file() else "启用新窗口归位")
+        self.placement_button.set_sensitive(not self.scene_busy)
+        if not self.scene_busy:
+            self.scene_feedback.set_text({
+                "focus": "勿扰开启，桌面小组件已隐藏。",
+                "presentation": "勿扰开启，小组件已隐藏，Firefox 和 Code 不透明。",
+            }.get(active, "日常模式"))
+
+    def run_scene(self, action):
+        if self.scene_busy:
+            return
+        self.scene_busy = True
+        self.update_scene_controls()
+        self.scene_feedback.set_text("正在切换…")
+
+        def finish(task):
+            if self.window is None:
+                return False
+            self.scene_busy = False
+            self.update_scene_controls()
+            try:
+                task.result()
+            except (OSError, subprocess.SubprocessError):
+                self.scene_feedback.set_text("切换失败")
+            if self.stack.get_visible_child_name() == "scenes":
+                self.fade_page(self.scene_feedback)
+            return False
+
+        task = self.pool.submit(subprocess.run, ("python3", "-B", str(HERE / "scenes.py"), action),
+                                check=True, timeout=25)
+        task.add_done_callback(lambda future: GLib.idle_add(finish, future))
+
     def appearance_page(self):
         page = self.page()
         self.appearance_status = label("", "muted")
@@ -514,13 +586,31 @@ class ControlCenter(Gtk.Application):
         self.gallery.set_max_children_per_line(4)
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll.set_min_content_height(330)
+        scroll.set_min_content_height(250)
         scroll.add(self.gallery)
         self.put(page, row(
             button("选择图片", self.choose_wallpaper),
             button("重新扫描", lambda: self.refresh_gallery(force=True)),
             button("恢复系统默认", lambda: self.apply_wallpaper(None)),
         ), label(str(self.gallery_path), "muted"), self.wallpaper_status)
+        self.wallpaper_preview = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN,
+                                              transition_duration=210)
+        preview = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        actions = Gtk.Box(spacing=8)
+        self.preview_title = label("", "track")
+        actions.pack_start(self.preview_title, True, True, 0)
+        actions.pack_end(button("应用壁纸和配色", self.apply_preview), False, False, 0)
+        actions.pack_end(button("取消", lambda: self.wallpaper_preview.set_reveal_child(False)), False, False, 0)
+        self.preview_canvas = Gtk.DrawingArea()
+        self.preview_canvas.set_size_request(-1, 90)
+        self.preview_canvas.connect("draw", self.draw_wallpaper_preview)
+        self.preview_contrast = label("", "muted")
+        self.put(preview, actions, self.preview_canvas, self.preview_contrast)
+        self.wallpaper_preview.add(preview)
+        self.preview_colors = None
+        self.preview_tick = None
+        self.preview_filename = None
+        self.put(page, self.wallpaper_preview)
         page.pack_start(scroll, True, True, 0)
         self.gallery_index = {}
         self.gallery_stamp = None
@@ -566,7 +656,7 @@ class ControlCenter(Gtk.Application):
                 card = Gtk.Button()
                 card.get_style_context().add_class("wallpaper-thumb")
                 card.set_tooltip_text(path.name)
-                card.connect("clicked", lambda _button, value=path: self.apply_wallpaper(str(value)))
+                card.connect("clicked", lambda _button, value=path: self.preview_wallpaper(str(value)))
                 preview = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
                 image = Gtk.Image.new_from_pixbuf(texture)
                 image.set_size_request(148, 87)
@@ -686,16 +776,106 @@ class ControlCenter(Gtk.Application):
             self.command("bluetoothctl", "power", "off" if "Powered: yes" in state else "on")
 
     def choose_wallpaper(self):
-        dialog = Gtk.FileChooserNative.new("选择壁纸", self.window, Gtk.FileChooserAction.OPEN, "应用", "取消")
+        dialog = Gtk.FileChooserNative.new("选择壁纸", self.window, Gtk.FileChooserAction.OPEN, "预览", "取消")
         images = Gtk.FileFilter()
         images.set_name("图片")
         images.add_pixbuf_formats()
         dialog.add_filter(images)
         if dialog.run() == Gtk.ResponseType.ACCEPT:
-            self.apply_wallpaper(dialog.get_filename())
+            self.preview_wallpaper(dialog.get_filename())
         dialog.destroy()
 
-    def apply_wallpaper(self, filename):
+    def preview_wallpaper(self, filename):
+        if not filename:
+            return
+        source = wallpaper_colors.sample_image(Path(filename))
+        if not source:
+            self.wallpaper_status.set_text("无法预览这张图片。")
+            return
+        _, strength = appearance.palette_options()
+        mode = appearance.read_mode()
+        active = appearance.resolve(mode, datetime.now().hour, source["brightness"])
+        alpha = .54 if mode == "glass" else .76
+        colors = wallpaper_colors.palette(source, active, strength, alpha)
+        background = wallpaper_colors.preview_background(colors["surface"], source, alpha)
+        ratio = wallpaper_colors.contrast(colors["ink"], background)
+        active_ratio = wallpaper_colors.contrast(colors["border"], background)
+        self.preview_title.set_text(Path(filename).stem)
+        self.preview_contrast.set_text(f"预估文字对比度 {ratio:.1f}:1  ·  活动工作区 {active_ratio:.1f}:1")
+        self.preview_filename = filename
+        colors["surface"] = background
+        previous = self.preview_colors
+        self.wallpaper_preview.set_reveal_child(True)
+        if self.preview_tick:
+            self.preview_canvas.remove_tick_callback(self.preview_tick)
+            self.preview_tick = None
+        if not previous or not self.window.get_settings().get_property("gtk-enable-animations"):
+            self.preview_colors = colors
+            self.preview_canvas.queue_draw()
+            return
+        start = GLib.get_monotonic_time()
+
+        def tick(widget, _clock):
+            progress = min(1, (GLib.get_monotonic_time() - start) / 205000)
+            eased = 1 - (1 - progress) ** 3
+            self.preview_colors = {key: wallpaper_colors.mix_hex(previous[key], color, eased)
+                                   for key, color in colors.items()}
+            widget.queue_draw()
+            if progress == 1:
+                self.preview_tick = None
+                return False
+            return True
+
+        self.preview_tick = self.preview_canvas.add_tick_callback(tick)
+
+    def draw_wallpaper_preview(self, widget, cr):
+        colors = self.preview_colors
+        if colors is None:
+            return False
+
+        def tint(name):
+            color = colors[name]
+            cr.set_source_rgb(*(int(color[i:i+2], 16) / 255 for i in (1, 3, 5)))
+
+        def box(x, y, width, height, name):
+            tint(name)
+            radius = min(8, height / 2, width / 2)
+            for cx, cy, angle in ((x+width-radius, y+radius, -pi/2),
+                                  (x+width-radius, y+height-radius, 0),
+                                  (x+radius, y+height-radius, pi/2), (x+radius, y+radius, pi)):
+                cr.arc(cx, cy, radius, angle, angle + pi / 2)
+            cr.close_path()
+            cr.fill()
+
+        width = (widget.get_allocated_width() - 18) / 3
+        if width < 36:
+            return False
+        for index, (title, summary) in enumerate((("Waybar", "02   03"), ("Island", "21:38"),
+                                                  ("Control Center", "Aa"))):
+            x = index * (width + 9)
+            box(x, 0, width, 88, "surface")
+            tint("muted")
+            cr.set_font_size(12)
+            cr.move_to(x + 12, 22)
+            cr.show_text(title)
+            cr.set_font_size(17 if index == 0 else 23)
+            if index == 0:
+                box(x + 10, 30, 29, 30, "border")
+                tint("surface")
+                cr.move_to(x + 14, 51)
+                cr.show_text("01")
+            tint("ink")
+            cr.move_to(x + (47 if index == 0 else 12), 53)
+            cr.show_text(summary)
+            box(x + 12, 69, 38, 7, "accent")
+        return False
+
+    def apply_preview(self):
+        if self.preview_filename:
+            self.apply_wallpaper(self.preview_filename, palette_source="wallpaper")
+            self.wallpaper_preview.set_reveal_child(False)
+
+    def apply_wallpaper(self, filename, palette_source=None):
         target = HERE / "wallpaper.png"
         temp = target.with_name("wallpaper.tmp.png")
         old = target.with_name("wallpaper.previous.png")
@@ -742,7 +922,7 @@ class ControlCenter(Gtk.Application):
         self.highlight_wallpaper()
         self.wallpaper_status.set_text("壁纸已更新。")
         try:
-            appearance.apply()
+            appearance.apply(source=palette_source)
             self.reload_appearance()
         except OSError:
             self.wallpaper_status.set_text("壁纸已更新，主题配色未能同步。")
@@ -752,6 +932,8 @@ class ControlCenter(Gtk.Application):
             return False
         self.reload_appearance()
         page = self.stack.get_visible_child_name()
+        if page == "scenes" and not self.scene_busy:
+            self.update_scene_controls()
         try:
             if page == "media":
                 state = text(*PLAYER, "status")
@@ -790,4 +972,4 @@ class ControlCenter(Gtk.Application):
 
 
 if __name__ == "__main__":
-    raise SystemExit(ControlCenter().run())
+    raise SystemExit(ControlCenter().run(sys.argv))

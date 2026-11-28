@@ -4,8 +4,6 @@ import json
 from pathlib import Path
 import subprocess
 import sys
-from threading import Thread
-from time import monotonic
 
 import gi
 from cairo import Region
@@ -17,8 +15,9 @@ from gi.repository import Gdk, Gio, GLib, Gtk, GtkLayerShell, Pango
 
 import appearance
 from docker_widget import DockerWidget
-from island import CITY_FILE, cached_weather, metrics
-from weather import weather, weather_condition
+from island import metrics
+from weather import weather_condition
+from weather_cache import cached_weather
 
 STYLE = Path(__file__).with_name("desktop-widgets.css").read_text()
 STATE_FILE = appearance.STATE / "desktop-widgets.json"
@@ -64,19 +63,17 @@ class DesktopWidgets(Gtk.Application):
         self.editor = None
         self.canvas = None
         self.visible = False
+        self.widgets_motion = None
         self.drag = None
         self.workspace_return = None
         self.cpu_history = deque(maxlen=28)
         self.theme = None
-        self.city = None
         self.weather_data = None
-        self.weather_due = 0
-        self.inflight = False
         self.css = Gtk.CssProvider()
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), self.css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         self.refresh_clock()
-        for interval, callback in ((1, self.refresh_clock), (4, self.refresh_metrics), (30, self.refresh_weather)):
+        for interval, callback in ((1, self.refresh_clock), (4, self.refresh_metrics), (5, self.refresh_weather)):
             GLib.timeout_add_seconds(interval, callback)
 
     def do_command_line(self, command):
@@ -89,6 +86,13 @@ class DesktopWidgets(Gtk.Application):
                 self.open_editor()
         elif action == "show":
             self.show_widgets(True)
+        elif action == "hide":
+            self.animate_widgets(False)
+        elif action == "restore":
+            self.animate_widgets(True)
+        elif action == "startup":
+            from scenes import scene
+            self.show_widgets(scene() == "normal")
         elif action == "toggle":
             self.show_widgets(not self.visible)
         else:
@@ -115,7 +119,49 @@ class DesktopWidgets(Gtk.Application):
         widget.get_style_context().add_class(style)
         return widget
 
+    def stop_widgets_motion(self):
+        if self.widgets_motion is not None:
+            GLib.source_remove(self.widgets_motion)
+            self.widgets_motion = None
+
+    def animate_widgets(self, visible):
+        self.stop_widgets_motion()
+        if self.editor and not visible:
+            self.editor.destroy()
+        if not Gtk.Settings.get_default().get_property("gtk-enable-animations"):
+            self.show_widgets(visible)
+            return
+        if visible and not self.visible:
+            self.show_widgets(True)
+            for window in self.windows.values():
+                Gtk.Widget.set_opacity(window, 0)
+        if not self.windows:
+            self.show_widgets(visible)
+            return
+
+        initial = {name: Gtk.Widget.get_opacity(window) for name, window in self.windows.items()}
+        target = float(visible)
+        started = GLib.get_monotonic_time()
+
+        def frame():
+            progress = min(1, (GLib.get_monotonic_time() - started) / 160000)
+            eased = 1 - (1 - progress) ** 3
+            for name, window in self.windows.items():
+                opacity = initial.get(name, target)
+                Gtk.Widget.set_opacity(window, opacity + (target - opacity) * eased)
+            if progress == 1:
+                self.widgets_motion = None
+                self.show_widgets(visible)
+                return False
+            return True
+
+        self.widgets_motion = GLib.timeout_add(16, frame)
+
     def show_widgets(self, visible):
+        self.stop_widgets_motion()
+        if visible:
+            for window in self.windows.values():
+                Gtk.Widget.set_opacity(window, 1)
         if visible == self.visible:
             return
         self.visible = visible
@@ -286,39 +332,9 @@ class DesktopWidgets(Gtk.Application):
             self.canvas.queue_draw()
 
     def refresh_weather(self):
-        if "weather" not in self.windows:
-            return True
-        try:
-            city = CITY_FILE.read_text().strip()
-        except OSError:
-            city = ""
-        if city != self.city:
-            self.city = city
-            self.weather_due = 0
-            saved = cached_weather()
-            self.weather_data = saved.get("data") if saved.get("city") == city else None
-        self.show_weather()
-        if not city or self.inflight or monotonic() < self.weather_due:
-            return True
-        self.inflight = True
-
-        def done(data):
-            self.inflight = False
-            if city == self.city:
-                self.weather_due = monotonic() + (1200 if data else 300)
-                if data:
-                    self.weather_data = data
-                    self.show_weather()
-            return False
-
-        def fetch():
-            try:
-                data = weather(city)
-            except (OSError, ValueError, KeyError):
-                data = None
-            GLib.idle_add(done, data)
-
-        Thread(target=fetch, daemon=True).start()
+        if "weather" in self.windows:
+            self.weather_data = cached_weather().get("data")
+            self.show_weather()
         return True
 
     @staticmethod

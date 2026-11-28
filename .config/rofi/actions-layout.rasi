@@ -1,0 +1,3 @@
+entry { placeholder: "搜索桌面操作"; }
+inputbar { children: [ entry ]; }
+element { children: [ element-text ]; }

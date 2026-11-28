@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+from argparse import ArgumentParser
+import fcntl
+from hashlib import sha256
+import json
+import os
+from pathlib import Path
+import shutil
+import stat
+import subprocess
+from tempfile import mkdtemp
+
+HOME = Path.home()
+STATE = Path(os.environ.get("XDG_STATE_HOME") or HOME / ".local/state")
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or HOME / ".config")
+BACKUPS = STATE / "dusk-control/config-backups"
+GENERATED_LINKS = {
+    "waybar/appearance.css", "waybar/control-center/appearance.css",
+    "swaync/appearance.css", "kitty/appearance.conf", "rofi/appearance.rasi",
+    "fastfetch/config.jsonc",
+}
+
+
+def run(*args, cwd=None):
+    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=10)
+
+
+def check():
+    release = {}
+    for line in Path("/etc/os-release").read_text().splitlines():
+        name, _, value = line.partition("=")
+        release[name] = value.strip('"')
+    distro = release.get("ID", "unknown")
+    print("Distribution:", release.get("PRETTY_NAME", distro))
+    if distro not in ("arch", "fedora"):
+        print("Checks are tailored to Arch Linux and Fedora.")
+    required = ("niri", "waybar", "rofi", "swaync", "swaybg", "kitty", "python3",
+                "cliphist", "wl-paste", "wl-copy", "flock", "git")
+    missing = [name for name in required if not shutil.which(name)]
+    print("Required commands:", ", ".join(missing) + " (missing)" if missing else "OK")
+    optional = ("playerctl", "wpctl", "brightnessctl", "wdisplays", "nmcli",
+                "bluetoothctl", "fcitx5", "docker")
+    print("Optional commands missing:", ", ".join(name for name in optional if not shutil.which(name)) or "none")
+    for binary in ('niri', 'waybar', 'swaync'):
+        if shutil.which(binary):
+            version = run(binary, '--version')
+            if version.returncode == 0:
+                print(version.stdout.strip())
+    imports = run("python3", "-c",
+                  'import gi, cairo; gi.require_version("Gtk", "3.0"); '
+                  'gi.require_version("GtkLayerShell", "0.1"); from gi.repository import Gtk, GtkLayerShell')
+    print("Python GTK3 / LayerShell:", "OK" if imports.returncode == 0 else imports.stderr.splitlines()[-1])
+    for binary, section in (("dusk-rofi/rofi", 6), ("dusk-swaync/swaync", 7)):
+        if os.access(HOME / ".local/libexec" / binary, os.X_OK):
+            print(f"{binary}: local build installed")
+        else:
+            print(f"{binary}: stock version available if installed; see README section {section} for the optional build")
+    if shutil.which("systemctl"):
+        for unit in ("dusk-appearance.timer", "dusk-weather.timer", "swaync.service"):
+            info = run("systemctl", "--user", "show", unit, "-p", "LoadState", "-p", "ActiveState", "-p", "UnitFileState")
+            print(f"{unit}: " + (" ".join(info.stdout.splitlines()) if not info.returncode else "user session unavailable"))
+    return int(bool(missing or imports.returncode))
+
+
+def fingerprint(path):
+    if path.is_symlink():
+        return ["link", os.readlink(path)]
+    if not path.exists():
+        return None
+    if not path.is_file():
+        raise ValueError(f"Expected a file, found another object: {path}")
+    with path.open("rb") as file:
+        digest = sha256(file.read()).hexdigest()
+    return ["file", digest, stat.S_IMODE(path.stat().st_mode)]
+
+
+def destination(root, name):
+    relative = Path(name)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError(f"Invalid relative path: {name}")
+    target = root / relative
+    if not target.parent.resolve().is_relative_to(root):
+        raise ValueError(f"Parent escapes configuration directory: {target}")
+    return target
+
+
+def plan(repo, root, show_diff=False):
+    listing = run("git", "ls-files", "-z", "--", ".config", cwd=repo)
+    if listing.returncode:
+        raise ValueError("Run plan or apply from the Dusk Git checkout, or pass --repo.")
+    changes = []
+    for tracked in filter(None, listing.stdout.split("\0")):
+        source = repo / tracked
+        name = Path(tracked).relative_to(".config").as_posix()
+        target = destination(root, name)
+        before = fingerprint(target)
+        generated = (source.name.startswith("wallpaper-palette.") or
+                     source.name == "island-wallpaper.css" or name in GENERATED_LINKS)
+        if before is not None and generated:
+            continue
+        after = fingerprint(source)
+        if after is None or before == after:
+            continue
+        changes.append({"path": name, "before": before, "after": after})
+        print(("ADD" if before is None else "UPDATE"), name)
+        if show_diff and before and before[0] == after[0] == "file":
+            difference = run("git", "diff", "--no-index", "--", str(target), str(source))
+            print(difference.stdout, end="")
+        elif show_diff and before and before[0] == after[0] == "link":
+            print(f"  {before[1]} -> {after[1]}")
+    print(f"{len(changes)} managed file(s) will change.")
+    return changes
+
+
+def copy_file(source, target):
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = Path(mkdtemp(prefix=".dusk-config-", dir=target.parent))
+    stage = temporary / "file"
+    try:
+        if source.is_symlink():
+            stage.symlink_to(os.readlink(source))
+        else:
+            shutil.copy2(source, stage)
+        stage.replace(target)
+    finally:
+        stage.unlink(missing_ok=True)
+        temporary.rmdir()
+
+
+def apply(repo, root):
+    changes = plan(repo, root)
+    if not changes:
+        return
+    if shutil.which("niri") and (repo / ".config/niri/config.kdl").is_file():
+        result = run("niri", "validate", "--config", str(repo / ".config/niri/config.kdl"))
+        if result.returncode:
+            raise ValueError(result.stderr.strip() or "Niri validation failed.")
+    backup = Path(mkdtemp(prefix="update-", dir=BACKUPS))
+    for item in changes:
+        name = item["path"]
+        if item["before"] is not None:
+            copy_file(destination(root, name), backup / "files" / name)
+    (backup / "manifest.json").write_text(json.dumps({"root": str(root), "changes": changes}, indent=2))
+    print(f"Backup: {backup}", flush=True)
+    for item in changes:
+        name = item["path"]
+        target = destination(root, name)
+        source = repo / ".config" / name
+        if fingerprint(target) != item["before"] or fingerprint(source) != item["after"]:
+            raise ValueError(f"File changed during update: {name}. Backup is available.")
+        copy_file(source, target)
+    print("Update complete. Use rollback with the printed backup path to restore.")
+
+
+def rollback(backup):
+    data = json.loads((backup / "manifest.json").read_text())
+    root = Path(data["root"]).resolve()
+    ready = []
+    for item in data["changes"]:
+        name = item["path"]
+        target = destination(root, name)
+        before = item["before"]
+        current = fingerprint(target)
+        if current == before:
+            continue
+        if current != item["after"]:
+            raise ValueError(f"File was edited after the update: {name}. No rollback changes applied.")
+        if before is not None and fingerprint(backup / "files" / name) != before:
+            raise ValueError(f"Backup file is missing or changed: {name}.")
+        ready.append((name, target, before))
+    for name, target, before in ready:
+        if before is None:
+            target.unlink()
+        else:
+            copy_file(backup / "files" / name, target)
+    print(f"Restored {len(ready)} managed file(s) from {backup}.")
+
+
+def main():
+    parser = ArgumentParser(description="Check, preview, update, or roll back Dusk desktop configuration.")
+    parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parent.parent)
+    parser.add_argument("--target", type=Path, default=CONFIG)
+    commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("check")
+    commands.add_parser("plan")
+    commands.add_parser("apply")
+    restore = commands.add_parser("rollback")
+    restore.add_argument("backup", type=Path)
+    args = parser.parse_args()
+    if args.command == "check":
+        return check()
+    if args.command == "plan":
+        plan(args.repo.resolve(), args.target.resolve(), show_diff=True)
+    else:
+        BACKUPS.mkdir(mode=0o700, parents=True, exist_ok=True)
+        with (BACKUPS / ".lock").open("w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            if args.command == "apply":
+                apply(args.repo.resolve(), args.target.resolve())
+            else:
+                rollback(args.backup.resolve())
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        raise SystemExit(str(error))

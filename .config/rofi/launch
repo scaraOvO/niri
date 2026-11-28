@@ -1,6 +1,22 @@
 #!/bin/sh
 animated="$HOME/.local/libexec/dusk-rofi/rofi"
+theme=
+if [ -n "$DUSK_ROFI_CLIPBOARD" ]; then
+    theme="@import \"$HOME/.config/rofi/clipboard-layout.rasi\""
+fi
+if [ "$DUSK_ROFI_CLIPBOARD" = manage ]; then
+    theme="$theme
+@import \"$HOME/.config/rofi/clipboard-manage.rasi\""
+fi
+if [ "$DUSK_ROFI_ACTIONS" = 1 ]; then
+    theme="@import \"$HOME/.config/rofi/actions-layout.rasi\""
+fi
 if [ -n "$WAYLAND_DISPLAY" ] && [ -x "$animated" ]; then
-    DUSK_ROFI_ANIMATE=1 DUSK_ROFI_SPLIT=1 exec "$animated" -theme-str "@import \"$HOME/.config/rofi/split-layout.rasi\"" "$@"
+    split="@import \"$HOME/.config/rofi/split-layout.rasi\""
+    DUSK_ROFI_ANIMATE=1 DUSK_ROFI_SPLIT=1 exec "$animated" -theme-str "$split
+$theme" "$@"
+fi
+if [ -n "$theme" ]; then
+    exec rofi -theme-str "$theme" "$@"
 fi
 exec rofi "$@"

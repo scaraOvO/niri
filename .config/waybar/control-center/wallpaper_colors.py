@@ -36,14 +36,22 @@ def sample(config, state):
     if not image.is_file():
         image = config / "niri/wanderer_coffee.jpg"
     try:
-        stat = image.stat()
-        key = [str(image), stat.st_size, stat.st_mtime_ns]
+        info = image.stat()
     except OSError:
         return None
+    key = [str(image), info.st_size, info.st_mtime_ns]
     stored = state / "wallpaper-source.json"
     previous = read_json(stored, {})
     if previous.get("key") == key:
         return previous
+    result = sample_image(image)
+    if result:
+        result["key"] = key
+        save(stored, json.dumps(result))
+    return result
+
+
+def sample_image(image):
     import gi
     gi.require_version("GdkPixbuf", "2.0")
     from gi.repository import GdkPixbuf, GLib
@@ -75,12 +83,41 @@ def sample(config, state):
     secondary = max(options, key=options.get) if options else (primary + 5) % 36
     values = sorted(luminances)
     brightness = values[len(values)//2] if values else .5
-    answer = {"key":key, "primary":primary/36, "secondary":secondary/36, "brightness":brightness}
-    save(stored, json.dumps(answer))
-    return answer
+    return {"primary": primary / 36, "secondary": secondary / 36, "brightness": brightness}
 
 
-def palette(source, mode, strength):
+def mix_hex(start, end, fraction):
+    channels = [(1 - fraction) * int(start[i:i+2], 16) + fraction * int(end[i:i+2], 16)
+                for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(value):02x}" for value in channels)
+
+
+def contrast(first, second):
+    def luminance(color):
+        channels = [int(color[i:i+2], 16) / 255 for i in (1, 3, 5)]
+        linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in channels]
+        return sum(a * b for a, b in zip(linear, (.2126, .7152, .0722)))
+    high, low = sorted((luminance(first), luminance(second)), reverse=True)
+    return (high + .05) / (low + .05)
+
+
+def readable(color, background, minimum):
+    if contrast(color, background) >= minimum:
+        return color
+    endpoint = max(("#000000", "#ffffff"), key=lambda candidate: contrast(candidate, background))
+    for step in range(1, 21):
+        candidate = mix_hex(color, endpoint, step / 20)
+        if contrast(candidate, background) >= minimum:
+            return candidate
+    return endpoint
+
+
+def preview_background(surface, source, alpha):
+    gray = "#" + f"{round(255 * source['brightness']):02x}" * 3
+    return mix_hex(gray, surface, alpha)
+
+
+def palette(source, mode, strength, surface_alpha=.76):
     ink_hue = source["primary"]
     second_hue = source["secondary"]
     amount = STRENGTHS[strength]
@@ -101,8 +138,14 @@ def palette(source, mode, strength):
             "edge":(.49,.30), "accent":(.75,.66), "on_accent":(.15,.42), "hover":(.83,.54),
             "secondary":(.82,.44), "terminal":(.14,.33), "border":(.68,.64),
         }
-    return {name:color(second_hue if name in {"panel","secondary"} else ink_hue, *values)
-            for name, values in recipes.items()}
+    colors = {name: color(second_hue if name in {"panel", "secondary"} else ink_hue, *values)
+              for name, values in recipes.items()}
+    background = preview_background(colors["surface"], source, surface_alpha)
+    for name in ("ink", "muted", "secondary"):
+        colors[name] = readable(colors[name], background, 4.5)
+    colors["border"] = readable(colors["border"], background, 3)
+    colors["on_accent"] = readable(colors["on_accent"], colors["accent"], 4.5)
+    return colors
 
 
 def css_colors(p):
