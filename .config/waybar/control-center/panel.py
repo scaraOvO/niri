@@ -249,9 +249,10 @@ class ControlCenter(Gtk.Application):
         sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         sidebar.set_name("sidebar")
         body.pack_start(sidebar, False, False, 0)
-        self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.NONE, transition_duration=310)
+        self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.NONE, transition_duration=235)
         body.pack_start(self.stack, True, True, 0)
         self.tabs = {}
+        self.page_fade = None
         for ident, glyph, title, make in (
             ("media", "\uf001", "媒体与设备", self.media_page),
             ("wifi", "\uf1eb", "网络", self.network_page),
@@ -285,10 +286,14 @@ class ControlCenter(Gtk.Application):
         if previous == ident and any(tab.get_style_context().has_class("selected") for tab in self.tabs.values()):
             return
         names = list(self.tabs)
-        if previous in names:
-            direction = Gtk.StackTransitionType.OVER_UP if names.index(ident) > names.index(previous) else Gtk.StackTransitionType.UNDER_DOWN
+        changed_page = previous in names and previous != ident
+        if changed_page:
+            forward = names.index(ident) > names.index(previous)
+            direction = Gtk.StackTransitionType.SLIDE_UP if forward else Gtk.StackTransitionType.SLIDE_DOWN
             self.stack.set_transition_type(direction)
         self.stack.set_visible_child_name(ident)
+        if changed_page:
+            self.fade_page(self.stack.get_visible_child())
         for name, tab in self.tabs.items():
             style = tab.get_style_context()
             style.add_class("selected") if name == ident else style.remove_class("selected")
@@ -296,6 +301,30 @@ class ControlCenter(Gtk.Application):
             self.refresh_gallery()
         if hasattr(self, "track"):
             self.refresh()
+
+    def fade_page(self, page):
+        previous = getattr(self, "page_fade", None)
+        if previous:
+            child, callback = previous
+            self.stack.remove_tick_callback(callback)
+            child.set_opacity(1)
+
+        if not self.window.get_settings().get_property("gtk-enable-animations"):
+            self.page_fade = None
+            return
+
+        page.set_opacity(0.70)
+        start = GLib.get_monotonic_time()
+
+        def tick(_stack, _clock):
+            progress = min(1, (GLib.get_monotonic_time() - start) / 210000)
+            page.set_opacity(1 - 0.30 * (1 - progress) ** 2)
+            if progress == 1:
+                self.page_fade = None
+                return False
+            return True
+
+        self.page_fade = page, self.stack.add_tick_callback(tick)
 
     def page(self, detail=None):
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)

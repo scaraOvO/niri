@@ -91,6 +91,24 @@ screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 // 窗口弹簧动画。阻尼越低，回弹越明显。
 animations {
 
+    workspace-switch {
+        spring damping-ratio=0.84 stiffness=920 epsilon=0.001
+    }
+
+    horizontal-view-movement {
+        spring damping-ratio=0.89 stiffness=1050 epsilon=0.001
+    }
+
+    overview-open-close {
+        duration-ms 285
+        curve "cubic-bezier" 0.2 0.8 0.2 1
+    }
+
+    recent-windows-close {
+        duration-ms 165
+        curve "ease-out-cubic"
+    }
+
     window-open {
         spring damping-ratio=0.62 stiffness=950 epsilon=0.001
     }

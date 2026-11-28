@@ -117,7 +117,8 @@ window#waybar, #workspaces button, #window, #custom-island, #network, #pulseaudi
   background-color: alpha(@wp_surface, .95); border-color: alpha(@wp_edge, .56);
 }
 #workspaces button:hover, #mpris.media-prev:hover, #mpris.media-next:hover { background-color: @wp_panel; }
-#workspaces button.active, #custom-control-center, #mpris.media-toggle {
+#workspaces button.active { background: @wp_border; color: @wp_surface; }
+#custom-control-center, #mpris.media-toggle {
   background: @wp_accent; color: @wp_on_accent;
 }
 #custom-control-center:hover, #mpris.media-toggle:hover { background: @wp_hover; }

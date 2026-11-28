@@ -9,7 +9,8 @@ window#waybar { color: #3d3047; }
 }
 #workspaces button { color: #53405d; }
 #workspaces button:hover { background: #eee0ed; }
-#workspaces button.active, #custom-control-center, #mpris.media-toggle {
+#workspaces button.active { background: #885474; color: #fff5fa; }
+#custom-control-center, #mpris.media-toggle {
   background: #f3cbb7; color: #58372f;
 }
 #workspaces button.urgent { background: #f3c7cf; color: #702c42; }
