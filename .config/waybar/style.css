@@ -2,7 +2,7 @@
 @import url("appearance.css");
 @import url("wallpaper-palette.css");
 /* 顶边高光与向下的投影。 */
-#workspaces, #window, #custom-island, #network, #pulseaudio,
+#workspaces, #window, #custom-island, #custom-sharing, #network, #pulseaudio,
 #custom-notifications, #tray, #custom-control-center, #media:not(.empty) {
   box-shadow: inset 0 1px 0 @bar_edge,
               0 3px 6px -2px @bar_lift;
@@ -10,3 +10,14 @@
 
 /* 展开时用原位浮层替代顶栏里的紧凑小岛。 */
 #custom-island.expanded { opacity: 0; }
+
+#custom-sharing {
+  min-width: 34px;
+  padding: 0;
+  border-radius: 18px;
+  color: #f26370;
+  font-family: "DejaVu Sans", sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+}
+#custom-sharing:hover { color: #ff8992; }

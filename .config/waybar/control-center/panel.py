@@ -393,6 +393,8 @@ class ControlCenter(Gtk.Application):
         settings = button("打开显示设置", lambda: self.open("wdisplays"))
         settings.set_valign(Gtk.Align.CENTER)
         display.pack_end(settings, False, False, 0)
+        presets = button("显示器预设", lambda: self.open("python3", "-B", str(Path(__file__).with_name("desktop_tools.py")), "displays"))
+        display.pack_end(presets, False, False, 0)
         self.put(page, display)
         return page
 

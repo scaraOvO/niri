@@ -316,3 +316,11 @@ tools/dusk-config rollback /path/to/printed/backup
 同页可启用新窗口归位。Firefox 和 Kitty 打开在 `browse`，列宽分别约为 69% 和 30%；Code 打开在 `develop`，列宽约为 76%。已打开的窗口保留原位置。
 
 点击壁纸缩略图会展开 Waybar、小岛和控制中心的配色预览，显示预估对比度。确认后才更换壁纸并启用壁纸取色。
+
+
+## 11. 临时终端、窗口搜索和显示预设
+
+- `Mod+Z` 展开或收起顶部 Kitty 终端，tmux 会话名为 `dusk-scratch`。点击桌面空白或切换到其他窗口也会自动收起。
+- `Mod+Ctrl+Space` 执行跨工作区窗口搜索。
+- `Mod+Ctrl+F8` 或控制中心的「显示器预设」可保存和套用布局。请先将显示器调整到目标状态，再保存为单屏、双屏或投影等预设。套用时 15 秒内未确认会自动回退。预设保存在 `~/.local/state/dusk-desktop/display-presets.json`，套用后的显示状态由 Niri 当前会话管理。
+- 小岛使用 Niri 报告的屏幕共享和录制状态，点击小岛旁的红点可查看屏幕或窗口标题。

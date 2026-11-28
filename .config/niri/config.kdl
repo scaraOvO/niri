@@ -143,6 +143,9 @@ window-rule {
 
 // 键盘和鼠标快捷键。当前桌面会话的 Mod 是 Super。
 binds {
+    Mod+Z repeat=false hotkey-overlay-title="Scratchpad" { spawn-sh "exec python3 -B ~/.config/waybar/control-center/desktop_tools.py scratchpad >>\"$XDG_RUNTIME_DIR/dusk-scratchpad.log\" 2>&1"; }
+    Mod+Ctrl+Space repeat=false { spawn-sh "exec python3 -B ~/.config/waybar/control-center/desktop_tools.py windows"; }
+    Mod+Ctrl+F8 repeat=false { spawn-sh "exec python3 -B ~/.config/waybar/control-center/desktop_tools.py displays"; }
 
     Mod+Shift+Slash { show-hotkey-overlay; }
 
@@ -421,3 +424,11 @@ layer-rule {
 spawn-at-startup "sh" "-c" "exec \"$HOME/.config/rofi/clipboard\" watch"
 
 spawn-at-startup "sh" "-c" "exec python3 -B \"$HOME/.config/waybar/control-center/scenes.py\" sync"
+
+window-rule {
+    match app-id="^dusk-scratchpad$"
+    open-floating true
+    default-floating-position x=0 y=-420 relative-to="top"
+    default-column-width { proportion 0.66; }
+    default-window-height { fixed 390; }
+}

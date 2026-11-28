@@ -2,7 +2,7 @@
 @define-color bar_edge rgba(255, 255, 255, 0.73);
 
 window#waybar { color: #3d3047; }
-#workspaces, #window, #custom-island, #network, #pulseaudio,
+#workspaces, #window, #custom-island, #custom-sharing, #network, #pulseaudio,
 #custom-notifications, #tray, #custom-control-center, #media:not(.empty) {
   background: rgba(255, 247, 239, 0.96);
   border-color: rgba(130, 102, 136, 0.30);

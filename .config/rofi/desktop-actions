@@ -12,11 +12,14 @@ selected=$(
         'normal' '场景：日常' \
         'focus' '场景：专注' \
         'presentation' '场景：演示' \
+        'windows' '搜索窗口' \
+        'displays' '显示器预设' \
         'placement' '窗口：归位设置' |
         DUSK_ROFI_ACTIONS=1 "$launcher" -dmenu -i -no-custom -no-show-icons -display-columns 2 -p ''
 ) || exit 0
 action=$(printf '%s\n' "$selected" | cut -f1)
 case "$action" in
+    windows|displays) exec python3 -B "$center/desktop_tools.py" "$action" ;;
     wallpaper) exec python3 -B "$center/panel.py" wallpaper ;;
     alerts) exec swaync-client --open-panel ;;
     appearance) exec python3 -B "$center/panel.py" appearance ;;

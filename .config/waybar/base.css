@@ -8,7 +8,7 @@
   min-height: 0;
 }
 window#waybar { background-color: transparent; color: #f5eced; border-radius: 11px; }
-#workspaces, #window, #custom-island, #network, #pulseaudio, #custom-notifications, #tray, #custom-control-center {
+#workspaces, #window, #custom-island, #custom-sharing, #network, #pulseaudio, #custom-notifications, #tray, #custom-control-center {
   background-color: rgba(91, 77, 108, 0.92);
   border: 1px solid rgba(227, 207, 233, 0.23);
   border-radius: 11px;

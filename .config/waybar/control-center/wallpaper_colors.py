@@ -153,9 +153,9 @@ def css_colors(p):
 
 
 WAYBAR = """
-window#waybar, #workspaces button, #window, #custom-island, #network, #pulseaudio,
+window#waybar, #workspaces button, #window, #custom-island, #custom-sharing, #network, #pulseaudio,
 #custom-notifications, #mpris.media-title, #mpris.media-prev, #mpris.media-next, tooltip label { color: @wp_ink; }
-#workspaces, #window, #custom-island, #network, #pulseaudio,
+#workspaces, #window, #custom-island, #custom-sharing, #network, #pulseaudio,
 #custom-notifications, #tray, #custom-control-center, #media:not(.empty), tooltip {
   background-color: alpha(@wp_surface, .95); border-color: alpha(@wp_edge, .56);
 }
@@ -266,7 +266,7 @@ def glass_surfaces(config, palette, files):
     outline = rgba(edge, .34)
 
     files[config / "waybar/wallpaper-palette.css"] += f"""
-#workspaces, #window, #custom-island, #network, #pulseaudio,
+#workspaces, #window, #custom-island, #custom-sharing, #network, #pulseaudio,
 #custom-notifications, #tray, #custom-control-center, #media:not(.empty) {{
   background-color: {bar}; border-color: {outline};
 }}

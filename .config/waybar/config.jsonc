@@ -11,7 +11,8 @@
     "niri/window"
   ],
   "modules-center": [
-    "custom/island"
+    "custom/island",
+    "custom/sharing"
   ],
   "modules-right": [
     "group/media",
@@ -128,6 +129,13 @@
     "format": "",
     "tooltip-format": "控制中心",
     "on-click": "niri msg action spawn-sh -- 'exec python3 \"$HOME/.config/waybar/control-center/panel.py\" >>\"$XDG_RUNTIME_DIR/dusk-control.log\" 2>&1'"
+  },
+  "custom/sharing": {
+    "exec": "python3 -B \"$HOME/.config/waybar/control-center/island.py\" sharing",
+    "interval": 1,
+    "return-type": "json",
+    "hide-empty-text": true,
+    "on-click": "niri msg action spawn-sh -- 'exec python3 -B \"$HOME/.config/waybar/control-center/island.py\" sharing-panel >>\"$XDG_RUNTIME_DIR/dusk-island.log\" 2>&1'"
   },
   "custom/island": {
     "exec": "python3 -B \"$HOME/.config/waybar/control-center/island.py\" status",

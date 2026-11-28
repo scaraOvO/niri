@@ -11,12 +11,13 @@ import time
 from threading import Thread
 
 import appearance
+from desktop_tools import active_casts, cast_details
 from usage import available_usage
 from weather import weather_condition
 from weather_cache import cached_weather, saved_city, update_weather
 
 MODE_FILE = appearance.STATE / "island-page"
-MODE_NAMES = {"weather": "天气", "time": "时间", "date": "日期", "tokens": "Token 用量", "system": "系统占用"}
+MODE_NAMES = {"sharing": "屏幕共享与录制", "weather": "天气", "time": "时间", "date": "日期", "tokens": "Token 用量", "system": "系统占用"}
 
 
 def pages(usage):
@@ -80,6 +81,8 @@ def clock_markup(value, mode, compact=False):
 
 def waybar_text(page, usage):
     now = datetime.now()
+    if page == "sharing":
+        return '<span foreground="#e66671">●</span>  共享中'
     if page == "time":
         return clock_markup(now.strftime("%H:%M"), appearance.effective(), compact=True)
     if page == "date":
@@ -121,7 +124,7 @@ def refresh_waybar():
     appearance.notify("pkill", f"-{signal.SIGRTMIN + 12}", "-u", str(os.getuid()), "-x", "waybar")
 
 
-def show_panel():
+def show_panel(show_sharing=False):
     import gi
     gi.require_version("Gtk", "3.0")
     gi.require_version("Gdk", "3.0")
@@ -411,14 +414,17 @@ def show_panel():
                 return False
             usage = available_usage()
             available = pages(usage)
-            page = current_page(available)
+            casts = active_casts() if show_sharing else []
+            page = "sharing" if casts else current_page(available)
             now = datetime.now()
             mode = appearance.effective()
             revision = Path(__file__).with_name("island-wallpaper.css").stat().st_mtime_ns
             if revision != self.css_revision:
                 self.css.load_from_path(str(Path(__file__).with_name("island.css")))
                 self.css_revision = revision
-            if page == "system":
+            if page == "sharing":
+                payload = cast_details(casts)
+            elif page == "system":
                 payload = metrics()
             elif page == "tokens":
                 payload = usage
@@ -428,7 +434,7 @@ def show_panel():
                 payload = now.date() if page == "date" else None
             caption = f" {payload[0]}%   󰍛 {payload[1]}%" if page == "system" else waybar_text(page, usage)
             self.head.set_label(caption)
-            self.head.get_child().set_use_markup(page in ("time", "weather"))
+            self.head.get_child().set_use_markup(page in ("time", "weather", "sharing"))
             if page == "weather" and self.displayed and self.displayed[0] == "weather":
                 self.sync_weather_view()
             if (page, payload, mode) == self.displayed:
@@ -456,6 +462,11 @@ def show_panel():
                     self.content.pack_start(self.calendar_view(now.date()), False, False, 0)
             elif page == "weather":
                 self.weather_view()
+            elif page == "sharing":
+                for label, kind in payload:
+                    target = self.print_line(label, "source")
+                    target.set_line_wrap(True)
+                    self.print_line("PipeWire" if kind == "PipeWire" else "Wayland 捕获", "footnote")
             elif page == "tokens":
                 self.print_line("各工具最新本机会话累计", "footnote")
                 for name, _, counts, timestamp in payload:
@@ -498,10 +509,17 @@ def show_panel():
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("action", choices=("status", "next", "previous", "panel"))
+    parser.add_argument("action", choices=("status", "next", "previous", "panel", "sharing", "sharing-panel"))
     args = parser.parse_args()
-    if args.action == "panel":
-        raise SystemExit(show_panel())
+    if args.action in ("panel", "sharing-panel"):
+        raise SystemExit(show_panel(show_sharing=args.action == "sharing-panel"))
+    if args.action == "sharing":
+        active = active_casts()
+        print(json.dumps({
+            "text": "●" if active else "",
+            "tooltip": "屏幕共享与录制" if active else "",
+        }, ensure_ascii=False))
+        raise SystemExit
     usage = available_usage()
     available = pages(usage)
     if args.action == "status":
